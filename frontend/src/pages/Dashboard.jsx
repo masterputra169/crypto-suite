@@ -150,17 +150,79 @@ const formatTime = (seconds) => {
   }
 };
 
-  const getCipherIcon = (cipherType) => {
-    const iconMap = {
-      'Caesar Cipher': '🔐',
-      'Vigenère Cipher': '🔑',
-      'Beaufort Cipher': '⚓',
-      'Autokey Cipher': '🗝️',
-      'Playfair Cipher': '📊',
-      'Hill Cipher': '📈'
-    };
-    return iconMap[cipherType] || '🔒';
+const getCipherIcon = (cipherType) => {
+  const iconMap = {
+    // ========================================
+    // SUBSTITUTION CIPHERS (Classic)
+    // ========================================
+    'Caesar Cipher': '🔐',           // Simple shift cipher
+    'Vigenère Cipher': '🔑',         // Polyalphabetic substitution
+    'Beaufort Cipher': '⚓',          // Reciprocal cipher (naval theme)
+    'Autokey Cipher': '🗝️',          // Self-generating key
+    
+    // ========================================
+    // POLYGRAM CIPHERS (Matrix-based)
+    // ========================================
+    'Playfair Cipher': '📊',         // 5x5 digram cipher
+    'Hill Cipher': '📈',             // Matrix multiplication cipher
+    
+    // ========================================
+    // TRANSPOSITION CIPHERS (Rearrangement)
+    // ========================================
+    'Rail Fence Cipher': '🌊',       // Zigzag pattern
+    'Columnar Transposition': '📋',  // Column-based rearrangement
+    'Double Transposition': '🔄',    // Two-pass transposition
+    'Myszkowski Transposition': '🎯', // Advanced columnar variant
+    
+    // ========================================
+    // STREAM CIPHERS (Bit-by-bit)
+    // ========================================
+    'Stream Cipher': '💧',           // Generic stream cipher
+    'LCG Stream Cipher': '🔢',       // Linear Congruential Generator
+    'BBS Stream Cipher': '🎲',       // Blum Blum Shub (cryptographically secure)
+    
+    // ========================================
+    // MODERN CIPHERS (Symmetric Block)
+    // ========================================
+    'DES': '🔷',                     // Data Encryption Standard
+    'DES ECB': '🔹',                 // DES Electronic Codebook mode
+    'DES CBC': '🔸',                 // DES Cipher Block Chaining mode
+    
+    // ========================================
+    // ASYMMETRIC CIPHERS (Public Key)
+    // ========================================
+    'RSA': '🔑🔓',                   // Rivest-Shamir-Adleman
+    'RSA Cipher': '🔑🔓',            // Alternative name
+    
+    // ========================================
+    // ADVANCED CIPHERS (Composite)
+    // ========================================
+    'One-Time Pad': '🎰',            // Perfect secrecy (OTP)
+    'OTP': '🎰',                     // One-Time Pad abbreviation
+    'Super Encryption': '🛡️',        // Multiple encryption layers
+    'Super-Encryption': '🛡️',        // Alternative hyphenation
+    
+    // ========================================
+    // ALTERNATIVE/HISTORICAL NAMES
+    // ========================================
+    'Caesar': '🔐',
+    'Vigenere': '🔑',
+    'Vigenère': '🔑',
+    'Playfair': '📊',
+    'Hill': '📈',
+    'Rail Fence': '🌊',
+    'Railfence': '🌊',
+    'Columnar': '📋',
+    'Double': '🔄',
+    'Myszkowski': '🎯',
+    'LCG': '🔢',
+    'BBS': '🎲',
+    'One Time Pad': '🎰',
+    'OneTimePad': '🎰',
   };
+  
+  return iconMap[cipherType] || '🔒';  // Default lock icon
+};
 
   // ✅ FIX: Safe number conversion helper
   const safeToFixed = (value, decimals = 2) => {

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Copy, RotateCcw, Shield, Eye, EyeOff, BarChart3, Lightbulb, ArrowRight, Lock } from 'lucide-react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
+
 
 // Import algorithms
 import {
@@ -25,6 +27,7 @@ const SuperEncryptionPage = () => {
   const [error, setError] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const validateKeys = (subKey, transKey) => {
     if (!subKey || subKey.length < 3) {
@@ -42,47 +45,66 @@ const SuperEncryptionPage = () => {
     return null;
   };
 
-  const handleProcess = () => {
-    setError('');
+  const handleProcess = async () => {  // ✅ ADD async
+  setError('');
+  
+  if (!inputText.trim()) {
+    setError('Please enter text to process');
+    return;
+  }
+
+  const keyError = validateKeys(substitutionKey, transpositionKey);
+  if (keyError) {
+    setError(keyError);
+    return;
+  }
+
+  // ✅ START TIMING
+  const startTime = performance.now();
+
+  try {
+    let output;
+    if (mode === 'encrypt') {
+      output = superEncrypt(inputText, substitutionKey, transpositionKey, order);
+    } else {
+      output = superDecrypt(inputText, substitutionKey, transpositionKey, order);
+    }
     
-    if (!inputText.trim()) {
-      setError('Please enter text to process');
-      return;
+    setResult(output);
+    setVisualization(getSuperEncryptionVisualization(inputText, substitutionKey, transpositionKey, order));
+    
+    // Generate analysis for ciphertext
+    if (mode === 'encrypt' && output.length >= 20) {
+      const analysisData = analyzeSuperEncryption(output, {
+        substitutionKey,
+        transpositionKey,
+        order
+      });
+      setAnalysis(analysisData);
+    } else {
+      setAnalysis(null);
     }
 
-    const keyError = validateKeys(substitutionKey, transpositionKey);
-    if (keyError) {
-      setError(keyError);
-      return;
-    }
+    // ✅ TRACK OPERATION (CORRECTED KEY_DATA)
+    await trackOperation(
+      'Super Encryption',
+      mode,
+      startTime,
+      inputText,
+      output,
+      { 
+        substitutionKey: substitutionKey,
+        transpositionKey: transpositionKey,
+        order: order,  // 'sub-trans' or 'trans-sub'
+        layers: 2
+      }
+    );
 
-    try {
-      let output;
-      if (mode === 'encrypt') {
-        output = superEncrypt(inputText, substitutionKey, transpositionKey, order);
-      } else {
-        output = superDecrypt(inputText, substitutionKey, transpositionKey, order);
-      }
-      
-      setResult(output);
-      setVisualization(getSuperEncryptionVisualization(inputText, substitutionKey, transpositionKey, order));
-      
-      // Generate analysis for ciphertext
-      if (mode === 'encrypt' && output.length >= 20) {
-        const analysisData = analyzeSuperEncryption(output, {
-          substitutionKey,
-          transpositionKey,
-          order
-        });
-        setAnalysis(analysisData);
-      } else {
-        setAnalysis(null);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Super encryption error:', err);
-    }
-  };
+  } catch (err) {
+    setError(err.message);
+    console.error('Super encryption error:', err);
+  }
+};
 
   const handleReset = () => {
     setInputText('');
@@ -283,11 +305,12 @@ const SuperEncryptionPage = () => {
             {/* Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
-              >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
-              </button>
+              onClick={handleProcess}
+              disabled={isTracking}  // ✅ ADD
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
+            </button>
               <button
                 onClick={handleReset}
                 className="px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition"

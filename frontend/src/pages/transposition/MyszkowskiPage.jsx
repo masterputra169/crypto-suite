@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, RotateCcw, Grid3x3, Eye, EyeOff, BarChart3, Lightbulb, GitCompare } from 'lucide-react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 
 // Import algorithms directly from myszkowskiTransposition
 import {
@@ -24,6 +25,7 @@ const MyszkowskiPage = () => {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [comparison, setComparison] = useState(null);
   const [showComparison, setShowComparison] = useState(false);
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const validateKeyword = (key) => {
     if (!key || key.length < 2) {
@@ -35,47 +37,61 @@ const MyszkowskiPage = () => {
     return null;
   };
 
-  const handleProcess = () => {
-    setError('');
+  const handleProcess = async () => {
+  setError('');
+  
+  if (!inputText.trim()) {
+    setError('Please enter text to process');
+    return;
+  }
+
+  const keywordError = validateKeyword(keyword);
+  if (keywordError) {
+    setError(keywordError);
+    return;
+  }
+
+  // ✅ START TIMING
+  const startTime = performance.now();
+
+  try {
+    let output;
+    if (mode === 'encrypt') {
+      output = myszkowskiEncrypt(inputText, keyword);
+    } else {
+      output = myszkowskiDecrypt(inputText, keyword);
+    }
     
-    if (!inputText.trim()) {
-      setError('Please enter text to process');
-      return;
+    setResult(output);
+    setVisualization(getMyszkowskiVisualization(inputText, keyword));
+    
+    // Generate comparison with columnar
+    const comp = compareWithColumnar(inputText, keyword);
+    setComparison(comp);
+    
+    // Generate analysis for ciphertext
+    if (mode === 'encrypt' && output.length >= 10) {
+      const analysisData = analyzeMyszkowski(output);
+      setAnalysis(analysisData);
+    } else {
+      setAnalysis(null);
     }
 
-    const keywordError = validateKeyword(keyword);
-    if (keywordError) {
-      setError(keywordError);
-      return;
-    }
+    // ✅ TRACK OPERATION WITH BACKEND
+    await trackOperation(
+      'Myszkowski Transposition',
+      mode,
+      startTime,
+      inputText,
+      output,
+      { keyword: keyword }
+    );
 
-    try {
-      let output;
-      if (mode === 'encrypt') {
-        output = myszkowskiEncrypt(inputText, keyword);
-      } else {
-        output = myszkowskiDecrypt(inputText, keyword);
-      }
-      
-      setResult(output);
-      setVisualization(getMyszkowskiVisualization(inputText, keyword));
-      
-      // Generate comparison with columnar
-      const comp = compareWithColumnar(inputText, keyword);
-      setComparison(comp);
-      
-      // Generate analysis for ciphertext
-      if (mode === 'encrypt' && output.length >= 10) {
-        const analysisData = analyzeMyszkowski(output);
-        setAnalysis(analysisData);
-      } else {
-        setAnalysis(null);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Myszkowski transposition error:', err);
-    }
-  };
+  } catch (err) {
+    setError(err.message);
+    console.error('Myszkowski transposition error:', err);
+  }
+};
 
   const handleReset = () => {
     setInputText('');
@@ -235,12 +251,13 @@ const MyszkowskiPage = () => {
 
             {/* Buttons */}
             <div className="flex gap-3">
-              <button
-                onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
-              >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
-              </button>
+                          <button
+              onClick={handleProcess}
+              disabled={isTracking}  // ✅ ADD THIS
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"  // ✅ ADD disabled classes
+            >
+              {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}  {/* ✅ UPDATE TEXT */}
+            </button>
               <button
                 onClick={handleReset}
                 className="px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition"

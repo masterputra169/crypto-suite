@@ -1,6 +1,7 @@
-// src/pages/substitution/VigenerePage.jsx
+// src/pages/substitution/VigenerePage.jsx - WITH COMPLETE TRACKING
 
 import { useState } from 'react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 import { Copy, RotateCcw, Lock, Eye, EyeOff, Grid3x3, BarChart3, Lightbulb } from 'lucide-react';
 
 // Import algorithms
@@ -26,6 +27,9 @@ const VigenerePage = () => {
   const [vigenereSquare, setVigenereSquare] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  
+  // ✅ USE CIPHER TRACKING HOOK
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const validateKeyword = (key) => {
     if (!key || key.length < 3) {
@@ -37,7 +41,7 @@ const VigenerePage = () => {
     return null;
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {  // ← ADD async
     setError('');
     
     if (!inputText.trim()) {
@@ -50,6 +54,9 @@ const VigenerePage = () => {
       setError(keywordError);
       return;
     }
+
+    // ✅ START TIMING
+    const startTime = performance.now();
 
     try {
       let output;
@@ -69,6 +76,17 @@ const VigenerePage = () => {
       } else {
         setAnalysis(null);
       }
+
+      // ✅ TRACK OPERATION WITH FULL DATA
+      await trackOperation(
+        'Vigenere Cipher',        // cipher type
+        mode,                     // operation
+        startTime,                // timing
+        inputText,                // input
+        output,                   // output
+        { key: keyword }          // key data
+      );
+
     } catch (err) {
       setError(err.message);
       console.error('Vigenère cipher error:', err);
@@ -219,13 +237,14 @@ const VigenerePage = () => {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - ✅ WITH TRACKING STATE */}
             <div className="flex gap-3">
               <button
                 onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
+                disabled={isTracking}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
+                {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
               </button>
               <button
                 onClick={handleReset}
@@ -330,7 +349,7 @@ const VigenerePage = () => {
             )}
           </div>
         </div>
-
+        
         {/* Vigenère Square */}
         {showSquare && vigenereSquare && (
           <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">

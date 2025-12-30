@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, RotateCcw, Layers, Eye, EyeOff, BarChart3, Shield, ArrowRight } from 'lucide-react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 
 // Import algorithms
 import {
@@ -24,6 +25,7 @@ const DoublePage = () => {
   const [error, setError] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const validateKey = (key, keyName) => {
     if (!key || key.length < 2) {
@@ -35,53 +37,71 @@ const DoublePage = () => {
     return null;
   };
 
-  const handleProcess = () => {
-    setError('');
+  const handleProcess = async () => {
+  setError('');
+  
+  if (!inputText.trim()) {
+    setError('Please enter text to process');
+    return;
+  }
+
+  const key1Error = validateKey(key1, 'Key 1');
+  if (key1Error) {
+    setError(key1Error);
+    return;
+  }
+
+  if (!useSameKey) {
+    const key2Error = validateKey(key2, 'Key 2');
+    if (key2Error) {
+      setError(key2Error);
+      return;
+    }
+  }
+
+  // ✅ START TIMING
+  const startTime = performance.now();
+
+  try {
+    const effectiveKey2 = useSameKey ? key1 : key2;
+    let output;
     
-    if (!inputText.trim()) {
-      setError('Please enter text to process');
-      return;
+    if (mode === 'encrypt') {
+      output = doubleTranspositionEncrypt(inputText, key1, effectiveKey2);
+    } else {
+      output = doubleTranspositionDecrypt(inputText, key1, effectiveKey2);
+    }
+    
+    setResult(output);
+    setVisualization(getDoubleTranspositionVisualization(inputText, key1, effectiveKey2));
+    
+    // Generate analysis for ciphertext
+    if (mode === 'encrypt' && output.length >= 20) {
+      const analysisData = analyzeDoubleTransposition(output);
+      setAnalysis(analysisData);
+    } else {
+      setAnalysis(null);
     }
 
-    const key1Error = validateKey(key1, 'Key 1');
-    if (key1Error) {
-      setError(key1Error);
-      return;
-    }
+    // ✅ TRACK OPERATION WITH BACKEND
+    await trackOperation(
+      'Double Transposition',
+      mode,
+      startTime,
+      inputText,
+      output,
+      { 
+        key1: key1, 
+        key2: effectiveKey2,
+        useSameKey: useSameKey 
+      }
+    );
 
-    if (!useSameKey) {
-      const key2Error = validateKey(key2, 'Key 2');
-      if (key2Error) {
-        setError(key2Error);
-        return;
-      }
-    }
-
-    try {
-      const effectiveKey2 = useSameKey ? key1 : key2;
-      let output;
-      
-      if (mode === 'encrypt') {
-        output = doubleTranspositionEncrypt(inputText, key1, effectiveKey2);
-      } else {
-        output = doubleTranspositionDecrypt(inputText, key1, effectiveKey2);
-      }
-      
-      setResult(output);
-      setVisualization(getDoubleTranspositionVisualization(inputText, key1, effectiveKey2));
-      
-      // Generate analysis for ciphertext
-      if (mode === 'encrypt' && output.length >= 20) {
-        const analysisData = analyzeDoubleTransposition(output);
-        setAnalysis(analysisData);
-      } else {
-        setAnalysis(null);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Double transposition error:', err);
-    }
-  };
+  } catch (err) {
+    setError(err.message);
+    console.error('Double transposition error:', err);
+  }
+};
 
   const handleReset = () => {
     setInputText('');
@@ -263,12 +283,13 @@ const DoublePage = () => {
 
             {/* Buttons */}
             <div className="flex gap-3">
-              <button
-                onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
-              >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
-              </button>
+                          <button
+              onClick={handleProcess}
+              disabled={isTracking}  // ✅ ADD THIS
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"  // ✅ ADD disabled classes
+            >
+              {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}  {/* ✅ UPDATE TEXT */}
+            </button>
               <button
                 onClick={handleReset}
                 className="px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition"

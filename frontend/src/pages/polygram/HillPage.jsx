@@ -1,6 +1,7 @@
-// src/pages/polygram/HillPage.jsx
+// src/pages/polygram/HillPage.jsx - WITH COMPLETE TRACKING
 
 import { useState } from 'react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 import { Copy, RotateCcw, Grid3x3, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { 
   hillEncrypt, 
@@ -19,6 +20,9 @@ const HillPage = () => {
   const [visualization, setVisualization] = useState(null);
   const [showKey, setShowKey] = useState(true);
   const [error, setError] = useState('');
+
+  // ✅ USE CIPHER TRACKING HOOK
+  const { trackOperation, isTracking } = useCipherTracking();
 
   // Update key matrix when size changes
   const handleMatrixSizeChange = (size) => {
@@ -45,7 +49,7 @@ const HillPage = () => {
     return matrix;
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {  // ← ADD async
     setError('');
     
     if (!inputText.trim()) {
@@ -71,6 +75,9 @@ const HillPage = () => {
       return;
     }
 
+    // ✅ START TIMING
+    const startTime = performance.now();
+
     try {
       let output;
       
@@ -85,6 +92,19 @@ const HillPage = () => {
       // Create visualization
       const viz = getHillVisualization(inputText, matrix);
       setVisualization(viz);
+
+      // ✅ TRACK OPERATION WITH FULL DATA
+      await trackOperation(
+        'Hill Cipher',            // cipher type
+        mode,                     // operation
+        startTime,                // timing
+        inputText,                // input
+        output,                   // output
+        { 
+          matrix: keyMatrix,      // store matrix as string
+          size: matrixSize        // store matrix size
+        }
+      );
       
     } catch (err) {
       setError(err.message);
@@ -152,34 +172,34 @@ const HillPage = () => {
               Input
             </h2>
 
-              {/* Mode Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mode
-            </label>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setMode('encrypt')}
-                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
-                  mode === 'encrypt'
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300'
-                }`}
-              >
-                Encrypt
-              </button>
-              <button
-                onClick={() => setMode('decrypt')}
-                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
-                  mode === 'decrypt'
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300'
-                }`}
-              >
-                Decrypt
-              </button>
+            {/* Mode Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Mode
+              </label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setMode('encrypt')}
+                  className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                    mode === 'encrypt'
+                      ? 'bg-indigo-600 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300'
+                  }`}
+                >
+                  Encrypt
+                </button>
+                <button
+                  onClick={() => setMode('decrypt')}
+                  className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                    mode === 'decrypt'
+                      ? 'bg-indigo-600 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300'
+                  }`}
+                >
+                  Decrypt
+                </button>
+              </div>
             </div>
-          </div>
 
             {/* Text Input */}
             <div className="mb-4">
@@ -197,7 +217,7 @@ const HillPage = () => {
               </p>
             </div>
 
-              {/* Matrix Size Selection */}
+            {/* Matrix Size Selection */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Matrix Size
@@ -261,13 +281,14 @@ const HillPage = () => {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - ✅ WITH TRACKING STATE */}
             <div className="flex gap-3">
               <button
                 onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
+                disabled={isTracking}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
+                {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
               </button>
               <button
                 onClick={handleReset}

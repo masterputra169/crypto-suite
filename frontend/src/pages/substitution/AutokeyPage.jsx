@@ -1,4 +1,7 @@
+// src/pages/substitution/AutokeyPage.jsx - WITH COMPLETE TRACKING
+
 import { useState } from 'react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 import { Copy, RotateCcw, Lock, Eye, EyeOff, Grid3x3, BarChart3, Lightbulb, Key } from 'lucide-react';
 
 // Import algorithms
@@ -25,6 +28,9 @@ const AutokeyPage = () => {
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
 
+  // ✅ USE CIPHER TRACKING HOOK
+  const { trackOperation, isTracking } = useCipherTracking();
+
   const validateKey = (key) => {
     if (!key || key.length < 3) {
       return 'Initial key must be at least 3 characters long';
@@ -35,7 +41,7 @@ const AutokeyPage = () => {
     return null;
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {  // ← ADD async
     setError('');
     
     if (!inputText.trim()) {
@@ -48,6 +54,9 @@ const AutokeyPage = () => {
       setError(keyError);
       return;
     }
+
+    // ✅ START TIMING
+    const startTime = performance.now();
 
     try {
       let output;
@@ -67,6 +76,17 @@ const AutokeyPage = () => {
       } else {
         setAnalysis(null);
       }
+
+      // ✅ TRACK OPERATION WITH FULL DATA
+      await trackOperation(
+        'Autokey Cipher',         // cipher type
+        mode,                     // operation
+        startTime,                // timing
+        inputText,                // input
+        output,                   // output
+        { key: initialKey }       // key data
+      );
+
     } catch (err) {
       setError(err.message);
       console.error('Autokey cipher error:', err);
@@ -218,13 +238,14 @@ const AutokeyPage = () => {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - ✅ WITH TRACKING STATE */}
             <div className="flex gap-3">
               <button
                 onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
+                disabled={isTracking}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
+                {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
               </button>
               <button
                 onClick={handleReset}

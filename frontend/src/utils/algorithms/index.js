@@ -2,7 +2,7 @@
 
 /**
  * Central Export File untuk semua algoritma kriptografi
- * Organized by module (A, B, C)
+ * Organized by module (A, B, C, D, E)
  */
 
 // ============= MODULE A: SUBSTITUTION CIPHERS =============
@@ -119,7 +119,6 @@ export {
   compareWithSingleCipher
 } from './advanced/superEncryption.js';
 
-
 // One-Time Pad (Perfect Secrecy)
 export {
   otpEncrypt,
@@ -135,7 +134,6 @@ export {
   textToBinary
 } from './advanced/oneTimePad.js';
 
-
 // ============= MODULE E: STREAM CIPHERS =============
 
 // Linear Congruential Generator (LCG)
@@ -144,11 +142,26 @@ export {
   lcgDecrypt,
   getLCGVisualization,
   analyzeLCGParameters,
-  generateRandomSeed,
+  generateRandomSeed as generateLCGRandomSeed,
   textToHex as lcgTextToHex,
-  hexToText,
+  hexToText as lcgHexToText,
   LCG_PRESETS
 } from './stream/lcg.js';
+
+// Blum Blum Shub (BBS)
+export {
+  bbsEncrypt,
+  bbsDecrypt,
+  getBBSVisualization,
+  analyzeBBSParameters,
+  generateRandomSeed as generateBBSRandomSeed,
+  getRandomBlumPrime,
+  textToHex as bbsTextToHex,
+  hexToText as bbsHexToText,
+  BBS_PRESETS,
+  BLUM_PRIMES
+} from './stream/bbs.js';
+
 
 // ============= UTILITIES =============
 
@@ -296,28 +309,30 @@ export const areCoprime = (a, b) => {
  * - Caesar: 4 functions (encrypt, decrypt, rot13, visualization)
  * - Vigenère: 7 functions (encrypt, decrypt, visualization, square, squareChar, analyze, findKeyLength)
  * - Beaufort: 7 functions (encrypt, decrypt, visualization, square, squareChar, analyze, findKeyLength)
- * - Autokey: 6 functions (TBD)
+ * - Autokey: 6 functions (encrypt, decrypt, visualization, square, analyze, findKeyLength)
  * 
  * POLYGRAM CIPHERS (Module B):
  * - Playfair: 4 functions (encrypt, decrypt, generateMatrix, visualization)
  * - Hill: 4 functions (encrypt, decrypt, validateKey, visualization)
  * 
  * TRANSPOSITION CIPHERS (Module C):
- * - Rail Fence: 5 functions (TBD)
- * - Columnar: 5 functions (TBD)
- * - Myszkowski: 5 functions (TBD)
- * - Double Transposition: 5 functions (TBD)
+ * - Rail Fence: 5 functions (encrypt, decrypt, visualization, pattern, analyze)
+ * - Columnar: 5 functions (encrypt, decrypt, visualization, grid, analyzeKey)
+ * - Myszkowski: 9 functions (encrypt, decrypt, visualization, grid, analyze, compare, validate, positions, efficiency)
+ * - Double Transposition: 5 functions (encrypt, decrypt, visualization, grid, analyze)
  * 
- * UTILITIES:
- * - prepareText
- * - prepareKey
- * - repeatKey
- * - calculateFrequency
- * - calculateIC
- * - getEnglishFrequency
- * - chiSquaredTest
- * - mod
- * - gcd
- * - modInverse
- * - areCoprime
+ * ADVANCED CIPHERS (Module D):
+ * - Super Encryption: 5 functions (encrypt, decrypt, visualization, analyze, validate, compare)
+ * - One-Time Pad: 9 functions (encrypt, decrypt, visualization, analyze, validate, generateKey×3, checkReuse, toHex, toBinary)
+ * 
+ * STREAM CIPHERS (Module E):
+ * - LCG: 6 functions + 1 preset (encrypt, decrypt, visualization, analyze, generateSeed, toHex, toText, LCG_PRESETS)
+ * - BBS: 8 functions + 2 presets (encrypt, decrypt, visualization, analyze, generateSeed, getBlumPrime, toHex, toText, BBS_PRESETS, BLUM_PRIMES)
+ * 
+ * UTILITIES: 11 functions
+ * - prepareText, prepareKey, repeatKey
+ * - calculateFrequency, calculateIC, getEnglishFrequency, chiSquaredTest
+ * - mod, gcd, modInverse, areCoprime
+ * 
+ * TOTAL: 90+ exported functions across 14 cipher implementations
  */

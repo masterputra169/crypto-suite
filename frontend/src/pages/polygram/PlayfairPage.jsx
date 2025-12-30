@@ -1,6 +1,7 @@
-// src/pages/polygram/PlayfairPage.jsx
+// src/pages/polygram/PlayfairPage.jsx - WITH COMPLETE TRACKING
 
 import { useState } from 'react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 import { Copy, RotateCcw, Grid3x3, Eye, EyeOff } from 'lucide-react';
 
 // Import algorithms
@@ -19,6 +20,9 @@ const PlayfairPage = () => {
   const [showKeyword, setShowKeyword] = useState(true);
   const [error, setError] = useState('');
 
+  // ✅ USE CIPHER TRACKING HOOK
+  const { trackOperation, isTracking } = useCipherTracking();
+
   const validateKeyword = (key) => {
     if (!key || key.length < 3) {
       return 'Keyword must be at least 3 characters long';
@@ -29,7 +33,7 @@ const PlayfairPage = () => {
     return null;
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {  // ← ADD async
     setError('');
     
     if (!inputText.trim()) {
@@ -43,6 +47,9 @@ const PlayfairPage = () => {
       return;
     }
 
+    // ✅ START TIMING
+    const startTime = performance.now();
+
     try {
       let output;
       if (mode === 'encrypt') {
@@ -53,6 +60,17 @@ const PlayfairPage = () => {
       
       setResult(output);
       setVisualization(getPlayfairVisualization(inputText, keyword));
+
+      // ✅ TRACK OPERATION WITH FULL DATA
+      await trackOperation(
+        'Playfair Cipher',        // cipher type
+        mode,                     // operation
+        startTime,                // timing
+        inputText,                // input
+        output,                   // output
+        { key: keyword }          // key data
+      );
+
     } catch (err) {
       setError(err.message);
       console.error('Playfair cipher error:', err);
@@ -109,7 +127,7 @@ const PlayfairPage = () => {
               Input
             </h2>
 
-                        {/* Mode Selection */}
+            {/* Mode Selection */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Mode
@@ -187,13 +205,14 @@ const PlayfairPage = () => {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - ✅ WITH TRACKING STATE */}
             <div className="flex gap-3">
               <button
                 onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
+                disabled={isTracking}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
+                {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
               </button>
               <button
                 onClick={handleReset}

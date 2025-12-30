@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Copy, RotateCcw, Key, Eye, EyeOff, BarChart3, Lightbulb, AlertTriangle, Sparkles, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
+
 
 // Import algorithms
 import {
@@ -26,6 +28,7 @@ const OTPPage = () => {
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [keyFormat, setKeyFormat] = useState('text');
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const validateKey = (key, textLength) => {
     if (!key) {
@@ -53,45 +56,61 @@ const OTPPage = () => {
     setError('');
   };
 
-  const handleProcess = () => {
-    setError('');
+  const handleProcess = async () => {  // ✅ ADD async
+  setError('');
+  
+  if (!inputText.trim()) {
+    setError('Please enter text to process');
+    return;
+  }
+
+  const cleanTextLength = inputText.replace(/[^A-Z]/gi, '').length;
+  const keyError = validateKey(otpKey, cleanTextLength);
+  if (keyError) {
+    setError(keyError);
+    return;
+  }
+
+  // ✅ START TIMING
+  const startTime = performance.now();
+
+  try {
+    let output;
+    if (mode === 'encrypt') {
+      output = otpEncrypt(inputText, otpKey);
+    } else {
+      output = otpDecrypt(inputText, otpKey);
+    }
     
-    if (!inputText.trim()) {
-      setError('Please enter text to process');
-      return;
+    setResult(output);
+    setVisualization(getOTPVisualization(inputText, otpKey));
+    
+    // Generate analysis for ciphertext
+    if (mode === 'encrypt' && output.length >= 10) {
+      const analysisData = analyzeOTP(output, otpKey);
+      setAnalysis(analysisData);
+    } else {
+      setAnalysis(null);
     }
 
-    const cleanTextLength = inputText.replace(/[^A-Z]/gi, '').length;
-    const keyError = validateKey(otpKey, cleanTextLength);
-    if (keyError) {
-      setError(keyError);
-      return;
-    }
-
-    try {
-      let output;
-      if (mode === 'encrypt') {
-        output = otpEncrypt(inputText, otpKey);
-      } else {
-        output = otpDecrypt(inputText, otpKey);
+    // ✅ TRACK OPERATION
+    await trackOperation(
+      'One-Time Pad',
+      mode,
+      startTime,
+      inputText,
+      output,
+      { 
+        keyLength: otpKey.length,
+        keyPreview: otpKey.substring(0, 20) + (otpKey.length > 20 ? '...' : '')
       }
-      
-      setResult(output);
-      setVisualization(getOTPVisualization(inputText, otpKey));
-      
-      // Generate analysis for ciphertext
-      if (mode === 'encrypt' && output.length >= 10) {
-        const analysisData = analyzeOTP(output, otpKey);
-        setAnalysis(analysisData);
-      } else {
-        setAnalysis(null);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('OTP error:', err);
-    }
-  };
+    );
 
+  } catch (err) {
+    setError(err.message);
+    console.error('OTP error:', err);
+  }
+};
   const handleReset = () => {
     setInputText('');
     setOtpKey('');
@@ -321,11 +340,12 @@ const OTPPage = () => {
             {/* Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
-              >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
-              </button>
+              onClick={handleProcess}
+              disabled={isTracking}  // ✅ ADD
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
+            </button>
               <button
                 onClick={handleReset}
                 className="px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition"

@@ -1,7 +1,8 @@
-// src/pages/transposition/RailFencePage.jsx
+// src/pages/transposition/RailFencePage.jsx - WITH BACKEND INTEGRATION
 
 import { useState } from 'react';
 import { Copy, RotateCcw, Waves, BarChart3, TrendingDown } from 'lucide-react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 
 // Import algorithms
 import {
@@ -20,6 +21,9 @@ const RailFencePage = () => {
   const [error, setError] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  
+  // ✅ USE CIPHER TRACKING HOOK
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const validateRails = (railCount, textLength) => {
     if (!railCount || railCount < 2) {
@@ -31,7 +35,7 @@ const RailFencePage = () => {
     return null;
   };
 
-  const handleProcess = () => {
+  const handleProcess = async () => {
     setError('');
     
     if (!inputText.trim()) {
@@ -45,6 +49,9 @@ const RailFencePage = () => {
       setError(railsError);
       return;
     }
+
+    // ✅ START TIMING
+    const startTime = performance.now();
 
     try {
       let output;
@@ -64,6 +71,17 @@ const RailFencePage = () => {
       } else {
         setAnalysis(null);
       }
+
+      // ✅ TRACK OPERATION
+      await trackOperation(
+        'Rail Fence Cipher',
+        mode,
+        startTime,
+        inputText,
+        output,
+        { rails: rails }
+      );
+
     } catch (err) {
       setError(err.message);
       console.error('Rail fence cipher error:', err);
@@ -220,13 +238,14 @@ const RailFencePage = () => {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - ✅ ADD DISABLED STATE */}
             <div className="flex gap-3">
               <button
                 onClick={handleProcess}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
+                disabled={isTracking}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
+                {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}
               </button>
               <button
                 onClick={handleReset}

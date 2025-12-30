@@ -1,8 +1,8 @@
-// src/pages/auth/ResetPasswordPage.jsx
+// src/pages/auth/ResetPasswordPage.jsx - WITH EXPIRY WARNING
 
 import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, KeyRound, Sparkles, CheckCircle, AlertCircle, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Lock, KeyRound, Sparkles, CheckCircle, AlertCircle, Check, X, Clock } from 'lucide-react';
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -144,6 +144,24 @@ const ResetPasswordPage = () => {
           <h1 className="text-4xl font-bold text-white mb-2">Reset Password</h1>
           <p className="text-gray-300">Enter your new password below</p>
         </div>
+
+        {/* ✅ NEW: EXPIRY WARNING BOX */}
+        {status !== 'success' && (
+          <div className="mb-6 bg-yellow-500/10 backdrop-blur-md border border-yellow-500/30 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-yellow-300 mb-1">
+                  ⏰ Time-Limited Link
+                </h3>
+                <p className="text-xs text-yellow-200/80 leading-relaxed">
+                  This password reset link is valid for <strong>1 hour only</strong> from the time it was sent to your email. 
+                  If the link has expired, please request a new password reset.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Reset Password Card */}
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">

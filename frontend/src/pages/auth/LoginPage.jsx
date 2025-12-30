@@ -1,4 +1,4 @@
-// src/pages/auth/LoginPage.jsx - WITH REMEMBER ME & FORGOT PASSWORD
+// src/pages/auth/LoginPage.jsx - SECURE REMEMBER ME (NO PASSWORD STORAGE)
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,17 +20,22 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // ✅ Load saved credentials on mount
+  // ✅ SECURE: Load saved EMAIL only (NO PASSWORD)
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
-    const savedPassword = localStorage.getItem('rememberedPassword');
     
-    if (savedEmail && savedPassword) {
-      setFormData({
-        email: savedEmail,
-        password: atob(savedPassword) // Decode from base64
-      });
+    if (savedEmail) {
+      setFormData(prev => ({
+        ...prev,
+        email: savedEmail
+      }));
       setRememberMe(true);
+    }
+
+    // ✅ CLEANUP: Remove any old saved passwords (migration)
+    if (localStorage.getItem('rememberedPassword')) {
+      localStorage.removeItem('rememberedPassword');
+      console.warn('🔒 Security: Removed insecurely stored password from localStorage');
     }
   }, []);
 
@@ -60,15 +65,11 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (data.success) {
-        // ✅ Handle Remember Me
+        // ✅ SECURE: Only save EMAIL (NEVER password)
         if (rememberMe) {
-          // Save credentials to localStorage (encoded)
           localStorage.setItem('rememberedEmail', formData.email);
-          localStorage.setItem('rememberedPassword', btoa(formData.password)); // Encode to base64
         } else {
-          // Clear saved credentials
           localStorage.removeItem('rememberedEmail');
-          localStorage.removeItem('rememberedPassword');
         }
 
         // Login to context
@@ -168,14 +169,16 @@ const LoginPage = () => {
 
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-white/20 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                  className="w-4 h-4 rounded border-white/20 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
                 />
-                <span className="text-sm text-gray-300">Remember me</span>
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  Remember my email
+                </span>
               </label>
               <button
                 type="button"

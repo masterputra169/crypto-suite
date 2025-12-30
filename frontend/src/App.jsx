@@ -36,6 +36,7 @@ import OTPPage from './pages/advanced/OTPPage';
 
 // Cipher Pages - Stream
 import LCGPage from './pages/stream/LCGPage';
+import BBSPage from './pages/stream/BBSPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -409,6 +410,24 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/bbs"
+          element={
+            <ProtectedRoute>
+              <MainLayout 
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+                sidebarOpen={sidebarOpen}
+                onSidebarToggle={handleSidebarToggle}
+              >
+                <BBSPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+
 
         {/* ==================== 404 NOT FOUND ==================== */}
         <Route path="*" element={<NotFound />} />

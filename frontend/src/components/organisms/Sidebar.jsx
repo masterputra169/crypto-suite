@@ -96,7 +96,6 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
       items: [
         { name: 'LCG Stream', path: '/lcg', icon: Shuffle },
         { name: 'BBS Stream', path: '/bbs', icon: Shuffle },
-        { name: 'Generic Stream', path: '/stream', icon: Shuffle },
       ]
     },
     {

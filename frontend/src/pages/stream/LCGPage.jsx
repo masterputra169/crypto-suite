@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, RotateCcw, Zap, Eye, EyeOff, BarChart3, Lightbulb, AlertTriangle, Sparkles, TrendingUp, Activity } from 'lucide-react';
+import { useCipherTracking } from '../../hooks/useCipherTracking';
 
 // Import algorithms
 import {
@@ -29,6 +30,7 @@ const LCGPage = () => {
   const [analysis, setAnalysis] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState('NUMERICAL_RECIPES');
+  const { trackOperation, isTracking } = useCipherTracking();
 
   const handlePresetChange = (presetName) => {
     setSelectedPreset(presetName);
@@ -47,41 +49,66 @@ const LCGPage = () => {
     setError('');
   };
 
-  const handleProcess = () => {
-    setError('');
+  const handleProcess = async () => {
+  setError('');
+  
+  if (!inputText.trim()) {
+    setError('Please enter text to process');
+    return;
+  }
+
+  // ✅ START TIMING
+  const startTime = performance.now();
+
+  try {
+    let output;
+    if (mode === 'encrypt') {
+      // ✅ FIX: Gunakan multiplier, increment, modulus (bukan a, c, m)
+      output = lcgEncrypt(inputText, multiplier, increment, modulus, seed);
+    } else {
+      output = lcgDecrypt(inputText, multiplier, increment, modulus, seed);
+    }
     
-    if (!inputText.trim()) {
-      setError('Please enter text to process');
-      return;
+    setResult(output);
+    
+    // Generate visualization for encryption
+    if (mode === 'encrypt') {
+      // ✅ FIX: Gunakan multiplier, increment, modulus
+      const viz = getLCGVisualization(inputText, multiplier, increment, modulus, seed);
+      setVisualization(viz);
+      
+      // Generate analysis
+      const analysisData = analyzeLCGParameters(multiplier, increment, modulus, seed);
+      setAnalysis(analysisData);
+    } else {
+      setVisualization(null);
+      setAnalysis(null);
     }
 
-    try {
-      let output;
-      if (mode === 'encrypt') {
-        output = lcgEncrypt(inputText, seed, multiplier, increment, modulus);
-      } else {
-        output = lcgDecrypt(inputText, seed, multiplier, increment, modulus);
+    // ✅ TRACK OPERATION WITH BACKEND
+    await trackOperation(
+      'LCG Stream Cipher',
+      mode,
+      startTime,
+      inputText,
+      output,
+      { 
+        // ✅ FIX: Gunakan multiplier, increment, modulus
+        multiplier: multiplier,
+        increment: increment,
+        modulus: modulus,
+        seed: seed,
+        preset: selectedPreset,
+        securityLevel: LCG_PRESETS[selectedPreset]?.securityLevel || 'Custom'
       }
-      
-      setResult(output);
-      
-      // Generate visualization for encryption
-      if (mode === 'encrypt') {
-        const viz = getLCGVisualization(inputText, seed, multiplier, increment, modulus);
-        setVisualization(viz);
-        
-        // Generate analysis
-        const analysisData = analyzeLCGParameters(seed, multiplier, increment, modulus);
-        setAnalysis(analysisData);
-      } else {
-        setVisualization(null);
-        setAnalysis(null);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('LCG error:', err);
-    }
-  };
+    );
+
+  } catch (err) {
+    setError(err.message);
+    console.error('LCG error:', err);
+  }
+};
+
 
   const handleReset = () => {
     setInputText('');
@@ -106,13 +133,13 @@ const LCGPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-pink-100 dark:from-gray-900 dark:to-gray-800 p-6">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Zap className="w-10 h-10 text-purple-600 dark:text-purple-400" />
+            <Zap className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
               LCG Stream Cipher
             </h1>
@@ -166,8 +193,8 @@ const LCGPage = () => {
                   onClick={() => setMode('encrypt')}
                   className={`flex-1 py-2 rounded-lg font-medium transition-all ${
                     mode === 'encrypt'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300'
+                      ? 'bg-indigo-600 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300'
                   }`}
                 >
                   Encrypt
@@ -176,8 +203,8 @@ const LCGPage = () => {
                   onClick={() => setMode('decrypt')}
                   className={`flex-1 py-2 rounded-lg font-medium transition-all ${
                     mode === 'decrypt'
-                      ? 'bg-purple-600 text-white shadow-lg'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300'
+                      ? 'bg-indigo-600 text-white shadow-lg'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300'
                   }`}
                 >
                   Decrypt
@@ -191,11 +218,13 @@ const LCGPage = () => {
                 {mode === 'encrypt' ? 'Plaintext' : 'Ciphertext (Hex)'}
               </label>
               <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={mode === 'encrypt' ? 'Enter text to encrypt...' : 'Enter hex string to decrypt...'}
-                className="w-full h-32 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition font-mono text-sm"
-              />
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={mode === 'encrypt' ? 'Enter text to encrypt...' : 'Enter hex string to decrypt...'}
+              className={`w-full h-32 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition ${
+                mode === 'decrypt' ? 'font-mono text-sm' : ''
+              }`}
+            />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {mode === 'encrypt' 
                   ? `${inputText.length} characters`
@@ -212,7 +241,7 @@ const LCGPage = () => {
               <select
                 value={selectedPreset}
                 onChange={(e) => handlePresetChange(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 transition"
+                className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-400 transition"
               >
                 {Object.entries(LCG_PRESETS).map(([key, preset]) => (
                   <option key={key} value={key}>
@@ -230,7 +259,7 @@ const LCGPage = () => {
                 </label>
                 <button
                   onClick={() => setShowParams(!showParams)}
-                  className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                 >
                   {showParams ? <EyeOff size={14} /> : <Eye size={14} />}
                   {showParams ? 'Hide' : 'Show'}
@@ -253,7 +282,7 @@ const LCGPage = () => {
                       />
                       <button
                         onClick={handleGenerateRandomSeed}
-                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition text-xs flex items-center gap-1"
+                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-xs flex items-center gap-1"
                         title="Generate Random Seed"
                       >
                         <Sparkles size={14} />
@@ -318,11 +347,12 @@ const LCGPage = () => {
             {/* Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={handleProcess}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl"
-              >
-                {mode === 'encrypt' ? 'Encrypt' : 'Decrypt'}
-              </button>
+              onClick={handleProcess}
+              disabled={isTracking}  // ✅ ADD
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"  // ✅ ADD disabled styles
+            >
+              {isTracking ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt' : 'Decrypt')}  {/* ✅ ADD loading text */}
+            </button>
               <button
                 onClick={handleReset}
                 className="px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition"
@@ -368,7 +398,7 @@ const LCGPage = () => {
                 {result && (
                   <button
                     onClick={() => handleCopy(result)}
-                    className="absolute top-2 right-2 p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                    className="absolute top-2 right-2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition"
                     title="Copy to clipboard"
                   >
                     <Copy className="w-4 h-4" />
@@ -379,7 +409,7 @@ const LCGPage = () => {
 
             {/* Statistics */}
             {result && visualization && (
-              <div className="space-y-3 p-4 bg-purple-50 dark:bg-gray-700 rounded-lg">
+              <div className="space-y-3 p-4 bg-indigo-50 dark:bg-gray-700 rounded-lg">
                 <h3 className="font-semibold text-gray-800 dark:text-white mb-2">
                   Statistics
                 </h3>
@@ -530,12 +560,12 @@ const LCGPage = () => {
             </div>
 
             {/* Overall Score */}
-            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border-2 border-purple-400 dark:border-purple-600">
+            <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-pink-50 dark:from-indigo-900/20 dark:to-pink-900/20 rounded-lg border-2 border-indigo-400 dark:border-indigo-600">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                   Overall Quality Score
                 </h3>
-                <span className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                <span className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
                   {analysis.quality.overallScore}/100
                 </span>
               </div>
@@ -556,18 +586,18 @@ const LCGPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-purple-600 text-white">
-                    <th className="border-2 border-purple-700 px-3 py-2">Step</th>
-                    <th className="border-2 border-purple-700 px-3 py-2">LCG Value</th>
-                    <th className="border-2 border-purple-700 px-3 py-2">Key Byte</th>
-                    <th className="border-2 border-purple-700 px-3 py-2">Hex</th>
-                    <th className="border-2 border-purple-700 px-3 py-2">Binary</th>
+                  <tr className="bg-indigo-600 text-white">
+                    <th className="border-2 border-indigo-700 px-3 py-2">Step</th>
+                    <th className="border-2 border-indigo-700 px-3 py-2">LCG Value</th>
+                    <th className="border-2 border-indigo-700 px-3 py-2">Key Byte</th>
+                    <th className="border-2 border-indigo-700 px-3 py-2">Hex</th>
+                    <th className="border-2 border-indigo-700 px-3 py-2">Binary</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visualization.keystream.slice(0, 20).map((item, idx) => (
-                    <tr key={idx} className="hover:bg-purple-50 dark:hover:bg-purple-900/20">
-                      <td className="border-2 border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-bold text-purple-600 dark:text-purple-400">
+                    <tr key={idx} className="hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                      <td className="border-2 border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-bold text-indigo-600 dark:text-indigo-400">
                         {item.step}
                       </td>
                       <td className="border-2 border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-mono text-gray-900 dark:text-white">
@@ -615,22 +645,22 @@ const LCGPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="bg-purple-600 text-white">
-                    <th className="border-2 border-purple-700 px-2 py-2">#</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Plain</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Byte</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Binary</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Key</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Binary</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">XOR</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Cipher</th>
-                    <th className="border-2 border-purple-700 px-2 py-2">Hex</th>
+                  <tr className="bg-indigo-600 text-white">
+                    <th className="border-2 border-indigo-700 px-2 py-2">#</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Plain</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Byte</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Binary</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Key</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Binary</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">XOR</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Cipher</th>
+                    <th className="border-2 border-indigo-700 px-2 py-2">Hex</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visualization.mapping.slice(0, 20).map((item) => (
-                    <tr key={item.position} className="hover:bg-purple-50 dark:hover:bg-purple-900/20">
-                      <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-bold text-purple-600 dark:text-purple-400">
+                    <tr key={item.position} className="hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                      <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-bold text-indigo-600 dark:text-indigo-400">
                         {item.position + 1}
                       </td>
                       <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-bold text-gray-900 dark:text-white">
@@ -651,7 +681,7 @@ const LCGPage = () => {
                       <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-mono text-xs text-gray-500 dark:text-gray-400">
                         ⊕
                       </td>
-                      <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-mono text-purple-600 dark:text-purple-400">
+                      <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-mono text-indigo-600 dark:text-indigo-400">
                         {item.cipherByte}
                       </td>
                       <td className="border-2 border-gray-300 dark:border-gray-600 px-2 py-2 text-center font-mono text-green-600 dark:text-green-400">
@@ -694,19 +724,19 @@ const LCGPage = () => {
               </h3>
               <ul className="space-y-2 text-gray-600 dark:text-gray-400 text-sm">
                 <li className="flex items-start">
-                  <span className="text-purple-600 dark:text-purple-400 mr-2">•</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 mr-2">•</span>
                   <span>Generate pseudorandom numbers using formula: X(n+1) = (a × X(n) + c) mod m</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-600 dark:text-purple-400 mr-2">•</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 mr-2">•</span>
                   <span>Convert each LCG value to byte (0-255) using modulo 256</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-600 dark:text-purple-400 mr-2">•</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 mr-2">•</span>
                   <span>XOR each plaintext byte with corresponding key byte</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-600 dark:text-purple-400 mr-2">•</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 mr-2">•</span>
                   <span>Result is encrypted ciphertext (usually represented as hex)</span>
                 </li>
               </ul>
@@ -719,19 +749,19 @@ const LCGPage = () => {
               </h3>
               <ul className="space-y-2 text-gray-600 dark:text-gray-400 text-sm">
                 <li className="flex items-start">
-                  <span className="font-semibold text-purple-600 dark:text-purple-400 mr-2">X₀:</span>
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-400 mr-2">X₀:</span>
                   <span>Seed - initial value (must be secret)</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="font-semibold text-purple-600 dark:text-purple-400 mr-2">a:</span>
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-400 mr-2">a:</span>
                   <span>Multiplier - determines period and quality</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="font-semibold text-purple-600 dark:text-purple-400 mr-2">c:</span>
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-400 mr-2">c:</span>
                   <span>Increment - can be zero (multiplicative LCG)</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="font-semibold text-purple-600 dark:text-purple-400 mr-2">m:</span>
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-400 mr-2">m:</span>
                   <span>Modulus - defines maximum period (usually 2³¹ or 2³²)</span>
                 </li>
               </ul>
@@ -824,18 +854,7 @@ const LCGPage = () => {
             </div>
           </div>
 
-          {/* Historical Context */}
-          <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border-l-4 border-indigo-600">
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              <strong className="text-indigo-600 dark:text-indigo-400">Historical Note:</strong> LCG was developed by 
-              D. H. Lehmer in 1949 for Monte Carlo simulations. It was widely used in early programming languages 
-              (rand() function in C, Java's Random class in early versions) for general random number generation. 
-              While excellent for simulations and games, LCG should never be used for cryptographic purposes. Modern 
-              systems use cryptographically secure PRNGs like Fortuna, Yarrow, or hardware RNGs for security applications.
-            </p>
-          </div>
-
-          {/* Common Presets */}
+           {/* Common Presets */}
           <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-600">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
               Common LCG Implementations
@@ -852,6 +871,20 @@ const LCGPage = () => {
               ))}
             </div>
           </div>
+
+
+          {/* Historical Context */}
+          <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border-l-4 border-indigo-600">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              <strong className="text-indigo-600 dark:text-indigo-400">Historical Note:</strong> LCG was developed by 
+              D. H. Lehmer in 1949 for Monte Carlo simulations. It was widely used in early programming languages 
+              (rand() function in C, Java's Random class in early versions) for general random number generation. 
+              While excellent for simulations and games, LCG should never be used for cryptographic purposes. Modern 
+              systems use cryptographically secure PRNGs like Fortuna, Yarrow, or hardware RNGs for security applications.
+            </p>
+          </div>
+
+          
         </div>
       </div>
     </div>
