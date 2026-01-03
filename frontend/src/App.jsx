@@ -1,8 +1,10 @@
-// src/App.jsx - Complete Version with Reset Password
+// src/App.jsx - Complete Version with AI Translation
+// ==================== INTEGRATED WITH AI TRANSLATION ====================
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AITranslationProvider } from './context/AITranslationContext'; // ✅ AI TRANSLATION
 import Sidebar from './components/organisms/Sidebar';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -38,7 +40,7 @@ import OTPPage from './pages/advanced/OTPPage';
 import LCGPage from './pages/stream/LCGPage';
 import BBSPage from './pages/stream/BBSPage';
 
-// Protected Route Component
+// ==================== PROTECTED ROUTE COMPONENT ====================
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -60,7 +62,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// 404 Page
+// ==================== 404 PAGE ====================
 const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -78,7 +80,7 @@ const NotFound = () => {
   );
 };
 
-// Layout with Sidebar
+// ==================== LAYOUT WITH SIDEBAR ====================
 const MainLayout = ({ children, darkMode, toggleDarkMode, sidebarOpen, onSidebarToggle }) => {
   return (
     <div className="flex min-h-screen">
@@ -96,6 +98,7 @@ const MainLayout = ({ children, darkMode, toggleDarkMode, sidebarOpen, onSidebar
   );
 };
 
+// ==================== APP CONTENT (WRAPPED BY PROVIDERS) ====================
 const AppContent = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -427,8 +430,6 @@ const AppContent = () => {
           }
         />
 
-
-
         {/* ==================== 404 NOT FOUND ==================== */}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -436,12 +437,15 @@ const AppContent = () => {
   );
 };
 
-// Main App Component - AuthProvider MUST wrap Router
+// ==================== MAIN APP COMPONENT ====================
+// ✅ AI TRANSLATION PROVIDER WRAPS EVERYTHING
 const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <AITranslationProvider> {/* ✅ AI TRANSLATION ADDED HERE */}
+          <AppContent />
+        </AITranslationProvider>
       </AuthProvider>
     </Router>
   );

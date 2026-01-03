@@ -1,4 +1,5 @@
-// src/components/organisms/Sidebar.jsx - Fixed Version
+// frontend/src/components/organisms/Sidebar.jsx - Complete AI Translation Version
+// ==================== COMPLETE & READY TO USE ====================
 
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -14,10 +15,14 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useAITranslation } from '../../context/AITranslationContext';
+import Translate from '../atoms/Translate';
 import UserMenu from './UserMenu';
+import AdvancedLanguageToggle from '../molecules/AdvancedLanguageToggle';
 
 const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
   const { isAuthenticated, logout } = useAuth();
+  const { language } = useAITranslation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -29,92 +34,90 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
     }
   }, [isOpen, onSidebarToggle]);
 
-  // Handle logout dengan navigate
   const handleLogout = async () => {
     try {
       await logout();
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout failed:', error);
-      // Force navigate even if logout API fails
       navigate('/login', { replace: true });
     }
   };
 
-  // Menu items yang selalu visible
+  // ==================== MENU STRUCTURE ====================
+  // Text akan otomatis ditranslate oleh AI saat ditampilkan
+  
   const publicMenuItems = [
     {
-      category: 'Main',
+      category: language === 'id' ? 'Utama' : 'Main',
       items: [
-        { name: 'Home', path: '/', icon: Home },
+        { name: language === 'id' ? 'Beranda' : 'Home', path: '/', icon: Home },
       ]
     }
   ];
 
-  // Menu items yang hanya muncul ketika login
   const authMenuItems = [
     {
-      category: 'Analytics',
+      category: language === 'id' ? 'Analitik' : 'Analytics',
       items: [
-        { name: 'Dashboard', path: '/dashboard', icon: BarChart3 },
+        { name: language === 'id' ? 'Dasbor' : 'Dashboard', path: '/dashboard', icon: BarChart3 },
       ]
     },
     {
-      category: 'Substitution Ciphers',
+      category: language === 'id' ? 'Cipher Substitusi' : 'Substitution Ciphers',
       items: [
-        { name: 'Caesar Cipher', path: '/caesar', icon: Lock },
-        { name: 'Vigenère Cipher', path: '/vigenere', icon: Lock },
-        { name: 'Beaufort Cipher', path: '/beaufort', icon: Lock },
-        { name: 'Autokey Cipher', path: '/autokey', icon: Lock },
+        { name: language === 'id' ? 'Cipher Caesar' : 'Caesar Cipher', path: '/caesar', icon: Lock },
+        { name: language === 'id' ? 'Cipher Vigenère' : 'Vigenère Cipher', path: '/vigenere', icon: Lock },
+        { name: language === 'id' ? 'Cipher Beaufort' : 'Beaufort Cipher', path: '/beaufort', icon: Lock },
+        { name: language === 'id' ? 'Cipher Autokey' : 'Autokey Cipher', path: '/autokey', icon: Lock },
       ]
     },
     {
-      category: 'Polygram Ciphers',
+      category: language === 'id' ? 'Cipher Poligram' : 'Polygram Ciphers',
       items: [
-        { name: 'Playfair Cipher', path: '/playfair', icon: Grid3x3 },
-        { name: 'Hill Cipher', path: '/hill', icon: Grid3x3 },
+        { name: language === 'id' ? 'Cipher Playfair' : 'Playfair Cipher', path: '/playfair', icon: Grid3x3 },
+        { name: language === 'id' ? 'Cipher Hill' : 'Hill Cipher', path: '/hill', icon: Grid3x3 },
       ]
     },
     {
-      category: 'Transposition Ciphers',
+      category: language === 'id' ? 'Cipher Transposisi' : 'Transposition Ciphers',
       items: [
         { name: 'Rail Fence', path: '/railfence', icon: Shuffle },
-        { name: 'Columnar', path: '/columnar', icon: Shuffle },
+        { name: language === 'id' ? 'Kolumnar' : 'Columnar', path: '/columnar', icon: Shuffle },
         { name: 'Myszkowski', path: '/myszkowski', icon: Shuffle },
-        { name: 'Double Transposition', path: '/double', icon: Shuffle },
+        { name: language === 'id' ? 'Transposisi Ganda' : 'Double Transposition', path: '/double', icon: Shuffle },
       ]
     },
     {
-      category: 'Advanced Classic',
+      category: language === 'id' ? 'Klasik Lanjutan' : 'Advanced Classic',
       items: [
-        { name: 'Super Encryption', path: '/super-encryption', icon: Lock },
+        { name: language === 'id' ? 'Super Enkripsi' : 'Super Encryption', path: '/super-encryption', icon: Lock },
         { name: 'One Time Pad', path: '/otp', icon: Lock },
       ]
     },
     {
-       category: 'Stream Cipher',
+      category: language === 'id' ? 'Cipher Stream' : 'Stream Cipher',
       items: [
         { name: 'LCG Stream', path: '/lcg', icon: Shuffle },
         { name: 'BBS Stream', path: '/bbs', icon: Shuffle },
       ]
     },
     {
-      category: 'Modern Block Cipher',
+      category: language === 'id' ? 'Cipher Blok Modern' : 'Modern Block Cipher',
       items: [
-        { name: 'DES Algorithm', path: '/des', icon: Grid3x3 },
-        { name: 'DES ECB Mode', path: '/des-ecb', icon: Grid3x3 },
-        { name: 'DES CBC Mode', path: '/des-cbc', icon: Grid3x3 },
+        { name: language === 'id' ? 'Algoritma DES' : 'DES Algorithm', path: '/des', icon: Grid3x3 },
+        { name: language === 'id' ? 'DES Mode ECB' : 'DES ECB Mode', path: '/des-ecb', icon: Grid3x3 },
+        { name: language === 'id' ? 'DES Mode CBC' : 'DES CBC Mode', path: '/des-cbc', icon: Grid3x3 },
       ]
     },
     {
-      category: 'Modern Asymmetric',
+      category: language === 'id' ? 'Asimetris Modern' : 'Modern Asymmetric',
       items: [
-        { name: 'RSA Encryption', path: '/rsa', icon: Lock },
+        { name: language === 'id' ? 'Enkripsi RSA' : 'RSA Encryption', path: '/rsa', icon: Lock },
       ]
     }
   ];
 
-  // Gabungkan menu berdasarkan status login
   const menuItems = isAuthenticated() 
     ? [...publicMenuItems, ...authMenuItems]
     : publicMenuItems;
@@ -129,7 +132,7 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
 
   const sidebarContent = (
     <>
-      {/* Header */}
+      {/* ==================== HEADER ==================== */}
       <div className={`p-4 border-b border-gray-700/50 flex-shrink-0 transition-all duration-700 ease-in-out ${
         isOpen ? 'pb-4' : 'pb-3'
       }`}>
@@ -175,7 +178,10 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
         )}
       </div>
 
-      {/* Navigation */}
+      {/* ==================== LANGUAGE TOGGLE ==================== */}
+      <AdvancedLanguageToggle isOpen={isOpen} />
+
+      {/* ==================== NAVIGATION MENU ==================== */}
       <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {menuItems.map((section, sectionIdx) => (
           <div key={sectionIdx} className="mb-6">
@@ -245,24 +251,25 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
           </div>
         ))}
 
-        {/* Message jika belum login */}
+        {/* ==================== LOGIN MESSAGE ==================== */}
         {!isAuthenticated() && (
           <div className={`mt-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg ${!isOpen && 'hidden'}`}>
             <p className="text-sm text-blue-300 mb-2">
-              🔒 Login to access all cipher features
+              🔒 {language === 'id' ? 'Masuk untuk mengakses semua fitur cipher' : 'Login to access all cipher features'}
             </p>
             <p className="text-xs text-gray-400">
-              Sign up for free now!
+              {language === 'id' ? 'Daftar gratis sekarang!' : 'Sign up for free now!'}
             </p>
           </div>
         )}
       </nav>
 
-      {/* User Menu at Bottom */}
+      {/* ==================== USER MENU ==================== */}
       <div className="p-4 border-t border-gray-700/50 flex-shrink-0">
         <UserMenu isOpen={isOpen} onLogout={handleLogout} />
       </div>
 
+      {/* ==================== CUSTOM STYLES ==================== */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -285,7 +292,7 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* ==================== MOBILE MENU BUTTON ==================== */}
       <button
         onClick={() => setIsMobileOpen(true)}
         className="group fixed top-4 left-4 z-50 p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg lg:hidden transition-all duration-500 ease-out shadow-lg hover:shadow-2xl hover:scale-110 relative overflow-hidden"
@@ -294,7 +301,7 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
         <Menu size={24} className="relative z-10 group-hover:rotate-180 transition-transform duration-700 ease-in-out" />
       </button>
 
-      {/* Desktop Sidebar */}
+      {/* ==================== DESKTOP SIDEBAR ==================== */}
       <aside
         className={`${
           isOpen ? 'w-64' : 'w-20'
@@ -308,7 +315,7 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
         {sidebarContent}
       </aside>
 
-      {/* Mobile Sidebar */}
+      {/* ==================== MOBILE SIDEBAR ==================== */}
       {isMobileOpen && (
         <>
           <div
@@ -322,6 +329,7 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
         </>
       )}
 
+      {/* ==================== GLOBAL ANIMATIONS ==================== */}
       <style>{`
         body {
           background-color: #1f2937;
