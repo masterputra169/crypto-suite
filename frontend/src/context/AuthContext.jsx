@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
     
     try {
       if (token) {
-        await fetch('http://localhost:5000/api/auth/logout', {
+        await fetch('http://api.cryptosuite.online/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🔄 Refreshing user data from server...');
       
-      const response = await fetch('http://localhost:5000/api/auth/me', {
+      const response = await fetch('http://api.cryptosuite.online/api/auth/me', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
