@@ -47,7 +47,7 @@ transporter.verify((error, success) => {
  * ✅ CRITICAL: Token must NOT be URL-encoded or modified
  */
 const sendPasswordResetEmail = async (email, resetToken) => {
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const clientUrl = process.env.CLIENT_URL || 'http://cryptosuite.online';
   
   // ✅ IMPORTANT: Use plain token, NO encoding
   const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;

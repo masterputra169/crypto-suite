@@ -66,7 +66,7 @@ router.post('/forgot-password', async (req, res) => {
     console.log('='.repeat(60));
     console.log(`Email: ${email}`);
     console.log(`Reset Token: ${resetToken}`);
-    console.log(`Reset Link: http://localhost:5173/reset-password?token=${resetToken}`);
+    console.log(`Reset Link: http://cryptosuite.online/reset-password?token=${resetToken}`);
     console.log(`Expires At: ${expiresAt.toLocaleString()}`);
     console.log('='.repeat(60));
 
