@@ -16,7 +16,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     setMessage('');
 
     try {
-      const response = await fetch('http://api.cryptosuite.online/api/auth/forgot-password', {
+      const response = await fetch('https://api.cryptosuite.online/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -34,7 +34,7 @@ const config = {
 
   // CORS Configuration
   cors: {
-    origin: process.env.CLIENT_URL || 'http://cryptosuite.online',
+    origin: process.env.CLIENT_URL || 'https://cryptosuite.online',
     credentials: true,
   },
 

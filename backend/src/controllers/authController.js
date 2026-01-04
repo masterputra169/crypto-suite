@@ -273,7 +273,7 @@ const forgotPassword = async (req, res) => {
       [user.id, hashedToken, expiresAt]
     );
 
-    const clientUrl = process.env.CLIENT_URL || 'http://cryptosuite.online';
+    const clientUrl = process.env.CLIENT_URL || 'https://cryptosuite.online';
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
 
     // ✅ TRY to send email, but ALWAYS show link in console

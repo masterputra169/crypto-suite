@@ -53,7 +53,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const response = await fetch('http://api.cryptosuite.online/api/auth/login', {
+      const response = await fetch('https://api.cryptosuite.online/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

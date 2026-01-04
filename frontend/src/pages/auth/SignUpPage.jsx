@@ -126,7 +126,7 @@ const SignUpPage = () => {
     setServerError('');
 
     try {
-      const response = await fetch('http://api.cryptosuite.online/api/auth/register', {
+      const response = await fetch('https://api.cryptosuite.online/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://api.cryptosuite.online/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://api.cryptosuite.online/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ api.interceptors.response.use(
     } else if (error.request) {
       // Request made but no response received
       console.error('🌐 Network Error - No response from server');
-      console.error('Check if backend is running on http://api.cryptosuite.online');
+      console.error('Check if backend is running on https://api.cryptosuite.online');
       
       return Promise.reject({
         success: false,
