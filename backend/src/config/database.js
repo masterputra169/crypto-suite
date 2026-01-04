@@ -15,17 +15,17 @@ const dbConfig = {
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  // Production optimizations
   connectTimeout: 10000, // 10 seconds
+  // ✅ FIX: Railway MySQL uses self-signed certificates
   ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: true
+    rejectUnauthorized: false  // ← UBAH DARI true KE false
   } : undefined
 };
 
 const pool = mysql.createPool(dbConfig);
 
 // Test connection with retry logic
-const testConnection = async (retries = 3) => {
+const testConnection = async (retries = 5) => {  // ← Tambah retry jadi 5
   for (let i = 0; i < retries; i++) {
     try {
       const connection = await pool.getConnection();
@@ -37,12 +37,28 @@ const testConnection = async (retries = 3) => {
       return true;
     } catch (error) {
       console.error(`❌ MySQL connection attempt ${i + 1}/${retries} failed:`, error.message);
+      
+      // ✅ Enhanced error logging
+      if (error.code) {
+        console.error(`   Error code: ${error.code}`);
+      }
+      if (error.errno) {
+        console.error(`   Error errno: ${error.errno}`);
+      }
+      
       if (i === retries - 1) {
-        console.error('🔴 All connection attempts failed. Exiting...');
+        console.error('🔴 All connection attempts failed.');
+        console.error('\n📋 Debug Information:');
+        console.error('   DB_HOST:', process.env.DB_HOST || 'NOT SET');
+        console.error('   DB_USER:', process.env.DB_USER || 'NOT SET');
+        console.error('   DB_NAME:', process.env.DB_NAME || 'NOT SET');
+        console.error('   DB_PORT:', process.env.DB_PORT || 'NOT SET');
+        console.error('   DB_PASSWORD:', process.env.DB_PASSWORD ? 'SET (hidden)' : 'NOT SET');
+        console.error('   NODE_ENV:', process.env.NODE_ENV || 'NOT SET');
         process.exit(1);
       }
-      // Wait 2 seconds before retry
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait 3 seconds before retry (Railway MySQL might be starting)
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
   }
 };
@@ -107,7 +123,7 @@ const initDatabase = async () => {
     `);
     console.log('✅ User statistics table ready');
 
-    // Cipher operations history table (tracking semua operasi cipher)
+    // Cipher operations history table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS cipher_operations (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -126,6 +142,45 @@ const initDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✅ Cipher operations table ready');
+
+    // ✅ TAMBAHAN: Cipher history table (for export)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS cipher_history (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        cipher_type VARCHAR(50) NOT NULL,
+        operation ENUM('encrypt', 'decrypt') NOT NULL,
+        input_text TEXT NOT NULL,
+        output_text TEXT NOT NULL,
+        key_data JSON NOT NULL COMMENT 'Stores shift, key, matrix, etc.',
+        time_spent INT DEFAULT 1 COMMENT 'Time spent in seconds',
+        input_length INT DEFAULT 0,
+        output_length INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_cipher (user_id, cipher_type),
+        INDEX idx_operation (operation),
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Cipher history table ready');
+
+    // ✅ TAMBAHAN: Password resets table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        token VARCHAR(255) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_token (token),
+        INDEX idx_user_id (user_id),
+        INDEX idx_expires_at (expires_at),
+        UNIQUE KEY unique_user_reset (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Password resets table ready');
 
     console.log('🎉 Database tables initialized successfully');
     connection.release();
