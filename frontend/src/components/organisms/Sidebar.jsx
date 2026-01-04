@@ -1,4 +1,4 @@
-// frontend/src/components/organisms/Sidebar.jsx - Complete AI Translation Version
+// frontend/src/components/organisms/Sidebar.jsx - Complete Version WITHOUT Translation
 // ==================== COMPLETE & READY TO USE ====================
 
 import { useState, useEffect } from 'react';
@@ -15,14 +15,10 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useAITranslation } from '../../context/AITranslationContext';
-import Translate from '../atoms/Translate';
 import UserMenu from './UserMenu';
-import AdvancedLanguageToggle from '../molecules/AdvancedLanguageToggle';
 
 const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
   const { isAuthenticated, logout } = useAuth();
-  const { language } = useAITranslation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -45,75 +41,73 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
   };
 
   // ==================== MENU STRUCTURE ====================
-  // Text akan otomatis ditranslate oleh AI saat ditampilkan
   
   const publicMenuItems = [
     {
-      category: language === 'id' ? 'Utama' : 'Main',
+      category: 'Main',
       items: [
-        { name: language === 'id' ? 'Beranda' : 'Home', path: '/', icon: Home },
+        { name: 'Home', path: '/', icon: Home },
       ]
     }
   ];
 
   const authMenuItems = [
     {
-      category: language === 'id' ? 'Analitik' : 'Analytics',
+      category: 'Analytics',
       items: [
-        { name: language === 'id' ? 'Dasbor' : 'Dashboard', path: '/dashboard', icon: BarChart3 },
+        { name: 'Dashboard', path: '/dashboard', icon: BarChart3 },
       ]
     },
     {
-      category: language === 'id' ? 'Cipher Substitusi' : 'Substitution Ciphers',
+      category: 'Substitution Ciphers',
       items: [
-        { name: language === 'id' ? 'Cipher Caesar' : 'Caesar Cipher', path: '/caesar', icon: Lock },
-        { name: language === 'id' ? 'Cipher Vigenère' : 'Vigenère Cipher', path: '/vigenere', icon: Lock },
-        { name: language === 'id' ? 'Cipher Beaufort' : 'Beaufort Cipher', path: '/beaufort', icon: Lock },
-        { name: language === 'id' ? 'Cipher Autokey' : 'Autokey Cipher', path: '/autokey', icon: Lock },
+        { name: 'Caesar Cipher', path: '/caesar', icon: Lock },
+        { name: 'Vigenère Cipher', path: '/vigenere', icon: Lock },
+        { name: 'Beaufort Cipher', path: '/beaufort', icon: Lock },
+        { name: 'Autokey Cipher', path: '/autokey', icon: Lock },
       ]
     },
     {
-      category: language === 'id' ? 'Cipher Poligram' : 'Polygram Ciphers',
+      category: 'Polygram Ciphers',
       items: [
-        { name: language === 'id' ? 'Cipher Playfair' : 'Playfair Cipher', path: '/playfair', icon: Grid3x3 },
-        { name: language === 'id' ? 'Cipher Hill' : 'Hill Cipher', path: '/hill', icon: Grid3x3 },
+        { name: 'Playfair Cipher', path: '/playfair', icon: Grid3x3 },
+        { name: 'Hill Cipher', path: '/hill', icon: Grid3x3 },
       ]
     },
     {
-      category: language === 'id' ? 'Cipher Transposisi' : 'Transposition Ciphers',
+      category: 'Transposition Ciphers',
       items: [
         { name: 'Rail Fence', path: '/railfence', icon: Shuffle },
-        { name: language === 'id' ? 'Kolumnar' : 'Columnar', path: '/columnar', icon: Shuffle },
+        { name: 'Columnar', path: '/columnar', icon: Shuffle },
         { name: 'Myszkowski', path: '/myszkowski', icon: Shuffle },
-        { name: language === 'id' ? 'Transposisi Ganda' : 'Double Transposition', path: '/double', icon: Shuffle },
+        { name: 'Double Transposition', path: '/double', icon: Shuffle },
       ]
     },
     {
-      category: language === 'id' ? 'Klasik Lanjutan' : 'Advanced Classic',
+      category: 'Advanced Classic',
       items: [
-        { name: language === 'id' ? 'Super Enkripsi' : 'Super Encryption', path: '/super-encryption', icon: Lock },
+        { name: 'Super Encryption', path: '/super-encryption', icon: Lock },
         { name: 'One Time Pad', path: '/otp', icon: Lock },
       ]
     },
     {
-      category: language === 'id' ? 'Cipher Stream' : 'Stream Cipher',
+      category: 'Stream Cipher',
       items: [
         { name: 'LCG Stream', path: '/lcg', icon: Shuffle },
         { name: 'BBS Stream', path: '/bbs', icon: Shuffle },
       ]
     },
     {
-      category: language === 'id' ? 'Cipher Blok Modern' : 'Modern Block Cipher',
+      category: 'Modern Block Cipher',
       items: [
-        { name: language === 'id' ? 'Algoritma DES' : 'DES Algorithm', path: '/des', icon: Grid3x3 },
-        { name: language === 'id' ? 'DES Mode ECB' : 'DES ECB Mode', path: '/des-ecb', icon: Grid3x3 },
-        { name: language === 'id' ? 'DES Mode CBC' : 'DES CBC Mode', path: '/des-cbc', icon: Grid3x3 },
+        { name: 'DES ECB Mode', path: '/des-ecb', icon: Grid3x3 },
+        { name: 'DES CBC Mode', path: '/des-cbc', icon: Grid3x3 },
       ]
     },
     {
-      category: language === 'id' ? 'Asimetris Modern' : 'Modern Asymmetric',
+      category: 'Modern Asymmetric',
       items: [
-        { name: language === 'id' ? 'Enkripsi RSA' : 'RSA Encryption', path: '/rsa', icon: Lock },
+        { name: 'RSA Encryption', path: '/rsa', icon: Lock },
       ]
     }
   ];
@@ -177,9 +171,6 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
           </div>
         )}
       </div>
-
-      {/* ==================== LANGUAGE TOGGLE ==================== */}
-      <AdvancedLanguageToggle isOpen={isOpen} />
 
       {/* ==================== NAVIGATION MENU ==================== */}
       <nav className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -255,10 +246,10 @@ const Sidebar = ({ darkMode, toggleDarkMode, onSidebarToggle }) => {
         {!isAuthenticated() && (
           <div className={`mt-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg ${!isOpen && 'hidden'}`}>
             <p className="text-sm text-blue-300 mb-2">
-              🔒 {language === 'id' ? 'Masuk untuk mengakses semua fitur cipher' : 'Login to access all cipher features'}
+              🔒 Login to access all cipher features
             </p>
             <p className="text-xs text-gray-400">
-              {language === 'id' ? 'Daftar gratis sekarang!' : 'Sign up for free now!'}
+              Sign up for free now!
             </p>
           </div>
         )}

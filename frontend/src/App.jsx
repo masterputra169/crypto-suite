@@ -4,7 +4,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { AITranslationProvider } from './context/AITranslationContext'; // ✅ AI TRANSLATION
 import Sidebar from './components/organisms/Sidebar';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -39,6 +38,11 @@ import OTPPage from './pages/advanced/OTPPage';
 // Cipher Pages - Stream
 import LCGPage from './pages/stream/LCGPage';
 import BBSPage from './pages/stream/BBSPage';
+
+import DESCBCPage from './pages/modern/DESCBCPage';
+import DESECBPage from './pages/modern/DESECBPage';
+import RSAPage from './pages/modern/RSAPage';
+
 
 // ==================== PROTECTED ROUTE COMPONENT ====================
 const ProtectedRoute = ({ children }) => {
@@ -430,6 +434,57 @@ const AppContent = () => {
           }
         />
 
+          <Route
+          path="/des-cbc"
+          element={
+            <ProtectedRoute>
+              <MainLayout 
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+                sidebarOpen={sidebarOpen}
+                onSidebarToggle={handleSidebarToggle}
+              >
+                <DESCBCPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        
+          <Route
+          path="/des-ecb"
+          element={
+            <ProtectedRoute>
+              <MainLayout 
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+                sidebarOpen={sidebarOpen}
+                onSidebarToggle={handleSidebarToggle}
+              >
+                <DESECBPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+          
+          <Route
+          path="/rsa"
+          element={
+            <ProtectedRoute>
+              <MainLayout 
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+                sidebarOpen={sidebarOpen}
+                onSidebarToggle={handleSidebarToggle}
+              >
+                <RSAPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+
         {/* ==================== 404 NOT FOUND ==================== */}
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -443,9 +498,7 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <AITranslationProvider> {/* ✅ AI TRANSLATION ADDED HERE */}
           <AppContent />
-        </AITranslationProvider>
       </AuthProvider>
     </Router>
   );

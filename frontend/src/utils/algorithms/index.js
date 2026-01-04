@@ -163,6 +163,44 @@ export {
 } from './stream/bbs.js';
 
 
+// ============= MODULE F: MODERN CIPHERS =============
+
+// DES CBC (Cipher Block Chaining)
+export {
+  desCBCEncrypt,
+  desCBCDecrypt,
+  getDESCBCVisualization,
+  generateRandomKey as generateDESKey,
+  generateRandomIV as generateDESIV,
+  validateDESCBCParams
+} from './modern/desCBC.js';
+
+
+export {
+  desECBEncrypt,
+  desECBDecrypt,
+  getDESECBVisualization,
+  generateRandomKey as generateDESECBKey,
+  validateDESECBParams,
+  compareECBvsCBC
+} from './modern/desECB.js';
+
+
+
+// RSA (Rivest-Shamir-Adleman)
+export {
+  generateRSAKeyPair,
+  rsaEncrypt,
+  rsaDecrypt,
+  getRSAVisualization,
+  validateRSAParams,
+  calculateKeyStrength,
+  formatLargeNumber,
+  exportKeyToPEM,
+  importKeyFromPEM
+} from './modern/rsa.js';
+
+
 // ============= UTILITIES =============
 
 /**

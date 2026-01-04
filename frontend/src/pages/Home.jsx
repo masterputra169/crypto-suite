@@ -316,7 +316,7 @@ const Home = () => {
             </h1>
 
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 text-center mt-10 mb-10 max-w-3xl mx-auto leading-relaxed animate-fade-in-up animation-delay-200">
-              Learn, explore, and master <span className="font-semibold text-primary-600 dark:text-primary-400">{stats?.total || '21+'}  cipher algorithms</span> from classical to modern with interactive visualizations, real-time analytics, and comprehensive guides.
+              Learn, explore, and master <span className="font-semibold text-primary-600 dark:text-primary-400">15+ cipher algorithms</span> from classical to modern with interactive visualizations, real-time analytics, and comprehensive guides.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 mb-16 animate-fade-in-up animation-delay-400">
