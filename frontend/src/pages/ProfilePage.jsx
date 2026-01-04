@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.jsx
+// src/pages/ProfilePage.jsx - FIXED UPDATE BUG
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -56,45 +56,73 @@ const ProfilePage = () => {
     try {
       const updateData = {};
       
-      if (formData.full_name && formData.full_name !== user.full_name) {
+      // ✅ ALWAYS send full_name (allow empty)
+      if (formData.full_name !== user.full_name) {
         updateData.full_name = formData.full_name.trim();
       }
       
-      if (formData.bio !== undefined && formData.bio !== user.bio) {
+      // ✅ ALWAYS send bio (allow empty)
+      if (formData.bio !== user.bio) {
         updateData.bio = formData.bio.trim();
       }
       
-      if (formData.avatar_url && formData.avatar_url !== user.avatar_url) {
-        try {
-          new URL(formData.avatar_url);
-          updateData.avatar_url = formData.avatar_url.trim();
-        } catch {
-          setMessage({ type: 'error', text: 'Avatar URL format is invalid' });
-          setLoading(false);
-          return;
+      // ✅ Validate avatar URL only if not empty
+      if (formData.avatar_url !== user.avatar_url) {
+        if (formData.avatar_url.trim()) {
+          // Only validate if URL is provided
+          try {
+            new URL(formData.avatar_url.trim());
+            updateData.avatar_url = formData.avatar_url.trim();
+          } catch {
+            setMessage({ type: 'error', text: 'Avatar URL format is invalid. Please enter a valid URL or leave it empty.' });
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Allow clearing avatar
+          updateData.avatar_url = '';
         }
       }
 
       if (Object.keys(updateData).length === 0) {
         setMessage({ type: 'error', text: 'No changes to save' });
         setLoading(false);
+        setIsEditing(false);
         return;
       }
 
-      console.log('Sending update:', updateData);
+      console.log('📤 Sending update:', updateData);
       
       const response = await authService.updateProfile(updateData);
       
-      if (response.success) {
-        updateUser(response.data);
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      console.log('📥 Received response:', response);
+
+      // ✅ CRITICAL FIX: Handle different response formats
+      const updatedUser = response.data?.data || response.data;
+      
+      if (response.data?.success !== false) {
+        // ✅ Update context (AuthContext will handle localStorage)
+        console.log('✅ Updating user context with:', updatedUser);
+        updateUser(updatedUser);
+        
+        setMessage({ type: 'success', text: 'Profile updated successfully! ✓' });
         setIsEditing(false);
+        
+        // ✅ Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setMessage({ type: '', text: '' });
+        }, 3000);
+      } else {
+        setMessage({ 
+          type: 'error', 
+          text: response.data?.message || 'Failed to update profile' 
+        });
       }
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('❌ Update profile error:', error);
       setMessage({ 
         type: 'error', 
-        text: error.message || 'Failed to update profile. Please check your data format.' 
+        text: error.response?.data?.message || error.message || 'Failed to update profile. Please try again.' 
       });
     } finally {
       setLoading(false);
@@ -109,24 +137,23 @@ const ProfilePage = () => {
     });
   };
 
-  // ✅ FIXED: Format time in SECONDS
-const formatTime = (seconds) => {
-  if (!seconds || seconds === 0) return '0s';
-  
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+  const formatTime = (seconds) => {
+    if (!seconds || seconds === 0) return '0s';
+    
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-  if (days > 0) {
-    return `${days}d ${hours % 24}h`;
-  } else if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
-  } else {
-    return `${seconds}s`;
-  }
-};
+    if (days > 0) {
+      return `${days}d ${hours % 24}h`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -148,13 +175,13 @@ const formatTime = (seconds) => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Profile </h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Profile</h1>
           <p className="text-gray-400">Manage your account information</p>
         </div>
 
         {/* Message */}
         {message.text && (
-          <div className={`mb-6 p-4 rounded-lg ${
+          <div className={`mb-6 p-4 rounded-lg animate-fadeIn ${
             message.type === 'success' 
               ? 'bg-green-500/20 border border-green-500/50 text-green-200' 
               : 'bg-red-500/20 border border-red-500/50 text-red-200'
@@ -165,9 +192,8 @@ const formatTime = (seconds) => {
 
         {/* Profile Card */}
         <div className="bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-          {/* Cover dengan Gradient yang Seamless */}
+          {/* Cover */}
           <div className="h-48 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative">
-            {/* Overlay untuk blend effect */}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-800/50"></div>
           </div>
 
@@ -175,14 +201,11 @@ const formatTime = (seconds) => {
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-20 mb-6">
               <div className="flex items-end gap-4">
-                {/* Avatar dengan Border Gradient yang Seamless */}
+                {/* Avatar */}
                 <div className="relative group">
-                  {/* Outer Glow Effect */}
                   <div className="absolute -inset-1 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-full blur-lg opacity-75 group-hover:opacity-100 transition-opacity"></div>
                   
-                  {/* Avatar Container */}
                   <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-1 shadow-2xl">
-                    {/* Inner Border */}
                     <div className="w-full h-full rounded-full bg-gray-800 p-1">
                       <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm flex items-center justify-center overflow-hidden">
                         {user.avatar_url ? (
@@ -190,6 +213,10 @@ const formatTime = (seconds) => {
                             src={user.avatar_url}
                             alt={user.username}
                             className="w-full h-full object-cover rounded-full"
+                            onError={(e) => {
+                              console.log('❌ Image failed to load:', user.avatar_url);
+                              e.target.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full">
@@ -200,11 +227,10 @@ const formatTime = (seconds) => {
                     </div>
                   </div>
                   
-                  {/* Camera Button with Gradient */}
                   {isEditing && (
-                    <button className="absolute bottom-2 right-2 p-3 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full text-white shadow-lg transition-all transform hover:scale-110">
+                    <div className="absolute bottom-2 right-2 p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full text-white shadow-lg">
                       <Camera size={18} />
-                    </button>
+                    </div>
                   )}
                 </div>
 
@@ -229,7 +255,15 @@ const formatTime = (seconds) => {
               ) : (
                 <div className="flex gap-2 mt-4 md:mt-0">
                   <button
-                    onClick={() => setIsEditing(false)}
+                    onClick={() => {
+                      setIsEditing(false);
+                      setMessage({ type: '', text: '' });
+                      setFormData({
+                        full_name: user.full_name || '',
+                        bio: user.bio || '',
+                        avatar_url: user.avatar_url || ''
+                      });
+                    }}
                     className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all flex items-center gap-2"
                   >
                     <X size={18} />
@@ -267,15 +301,19 @@ const formatTime = (seconds) => {
                     value={formData.bio}
                     onChange={handleChange}
                     rows={4}
+                    maxLength={500}
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all"
-                    placeholder="Tell us about yourself..."
+                    placeholder="Tell us about yourself... (max 500 characters)"
                   />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {formData.bio.length}/500 characters
+                  </p>
                 </div>
 
                 {/* Avatar URL */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Avatar URL
+                    Avatar URL (Optional)
                   </label>
                   <input
                     type="url"
@@ -285,6 +323,9 @@ const formatTime = (seconds) => {
                     className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     placeholder="https://example.com/avatar.jpg"
                   />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Leave empty to use default avatar
+                  </p>
                 </div>
 
                 {/* Submit Button */}
@@ -323,7 +364,7 @@ const formatTime = (seconds) => {
                 {user.bio && (
                   <div className="p-4 bg-gray-700/50 rounded-lg border border-gray-700/50 hover:border-purple-500/30 transition-all">
                     <p className="text-xs text-gray-400 mb-2">Bio</p>
-                    <p className="text-white">{user.bio}</p>
+                    <p className="text-white whitespace-pre-wrap">{user.bio}</p>
                   </div>
                 )}
 
@@ -364,12 +405,12 @@ const formatTime = (seconds) => {
           </div>
         </div>
 
-        {/* Danger Zone - Logout & Change Password */}
+        {/* Account Actions */}
         <div className="mt-8 bg-gray-800 rounded-2xl p-8 border border-gray-700/50">
           <h3 className="text-xl font-bold text-white mb-6">Account Actions</h3>
           
           <div className="space-y-4">
-            {/* Change Password Button */}
+            {/* Change Password */}
             <button
               onClick={() => navigate('/change-password')}
               className="w-full flex items-center justify-between p-4 bg-gray-700/50 hover:bg-gray-700 border border-gray-700/50 hover:border-blue-500/30 rounded-lg transition-all group"
@@ -386,7 +427,7 @@ const formatTime = (seconds) => {
               <ChevronRight className="text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" size={20} />
             </button>
 
-            {/* Logout Button */}
+            {/* Logout */}
             <button
               onClick={handleLogout}
               className="w-full flex items-center justify-between p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-all group"
@@ -405,6 +446,23 @@ const formatTime = (seconds) => {
           </div>
         </div>
       </div>
+
+      {/* Animations */}
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

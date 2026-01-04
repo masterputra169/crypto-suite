@@ -2,7 +2,6 @@
 
 const nodemailer = require('nodemailer');
 
-// ✅ Debug: Log email config saat file dimuat
 console.log('\n📧 SendGrid Email Configuration:');
 console.log('   HOST:', process.env.EMAIL_HOST || '❌ NOT SET');
 console.log('   PORT:', process.env.EMAIL_PORT || '❌ NOT SET');
@@ -10,7 +9,6 @@ console.log('   USER:', process.env.EMAIL_USER || '❌ NOT SET');
 console.log('   API KEY:', process.env.EMAIL_PASSWORD ? `✅ SET (${process.env.EMAIL_PASSWORD.substring(0, 10)}...)` : '❌ NOT SET');
 console.log('   FROM:', process.env.EMAIL_FROM || '❌ NOT SET');
 
-// Validate SendGrid configuration
 if (!process.env.EMAIL_HOST || !process.env.EMAIL_PASSWORD) {
   console.error('\n❌ ERROR: SendGrid configuration incomplete!');
   console.error('Please check your .env file in backend/ folder\n');
@@ -24,28 +22,21 @@ if (process.env.EMAIL_PASSWORD && !process.env.EMAIL_PASSWORD.startsWith('SG.'))
   console.error('\n⚠️  WARNING: EMAIL_PASSWORD should be a SendGrid API Key (starts with SG.)\n');
 }
 
-// Create SendGrid transporter
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT),
-  secure: false, // false for port 587
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER, // Must be "apikey"
-    pass: process.env.EMAIL_PASSWORD, // SendGrid API Key
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
-  // SendGrid specific options
   debug: process.env.NODE_ENV === 'development',
   logger: process.env.NODE_ENV === 'development'
 });
 
-// Verify connection configuration
 transporter.verify((error, success) => {
   if (error) {
     console.error('❌ SendGrid connection failed:', error.message);
-    console.error('Please check:');
-    console.error('  1. EMAIL_USER = "apikey" (exactly)');
-    console.error('  2. EMAIL_PASSWORD = Your SendGrid API Key');
-    console.error('  3. API Key has "Mail Send" permissions');
   } else {
     console.log('✅ SendGrid is ready to send emails');
   }
@@ -53,14 +44,22 @@ transporter.verify((error, success) => {
 
 /**
  * Send password reset email via SendGrid
- * @param {string} email - Recipient email
- * @param {string} resetToken - Password reset token
+ * ✅ CRITICAL: Token must NOT be URL-encoded or modified
  */
 const sendPasswordResetEmail = async (email, resetToken) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  
+  // ✅ IMPORTANT: Use plain token, NO encoding
+  const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+
+  console.log('\n📧 Preparing password reset email...');
+  console.log('   To:', email);
+  console.log('   Token (first 20 chars):', resetToken.substring(0, 20) + '...');
+  console.log('   Token length:', resetToken.length);
+  console.log('   Reset URL:', resetUrl);
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM, // Must be verified sender in SendGrid
+    from: process.env.EMAIL_FROM,
     to: email,
     subject: 'Password Reset Request - Crypto Suite',
     html: `
@@ -112,15 +111,11 @@ const sendPasswordResetEmail = async (email, resetToken) => {
             display: inline-block;
             padding: 14px 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;
             font-size: 16px;
-            transition: transform 0.2s;
-          }
-          .button:hover {
-            transform: translateY(-2px);
           }
           .link-box {
             background: #f8f9fa;
@@ -158,9 +153,6 @@ const sendPasswordResetEmail = async (email, resetToken) => {
             font-size: 13px;
             border-top: 1px solid #e9ecef;
           }
-          .footer p {
-            margin: 5px 0;
-          }
         </style>
       </head>
       <body>
@@ -175,7 +167,7 @@ const sendPasswordResetEmail = async (email, resetToken) => {
             <p>Click the button below to reset your password:</p>
             
             <div class="button-container">
-              <a href="${resetUrl}" class="button">Reset Password</a>
+              <a href="${resetUrl}" class="button" style="color: white;">Reset Password</a>
             </div>
             
             <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
@@ -213,10 +205,7 @@ Hello,
 
 You requested to reset your password for your Crypto Suite account.
 
-Please click the following link to reset your password:
-${resetUrl}
-
-Or copy and paste this link into your browser:
+Reset your password by clicking this link:
 ${resetUrl}
 
 IMPORTANT:
@@ -227,9 +216,7 @@ IMPORTANT:
 Best regards,
 Crypto Suite Team
 
----
 © ${new Date().getFullYear()} Crypto Suite. All rights reserved.
-This is an automated email. Please do not reply.
     `
   };
 
@@ -247,8 +234,6 @@ This is an automated email. Please do not reply.
 
 /**
  * Send welcome email via SendGrid
- * @param {string} email - Recipient email
- * @param {string} username - Username
  */
 const sendWelcomeEmail = async (email, username) => {
   const mailOptions = {
@@ -276,13 +261,13 @@ const sendWelcomeEmail = async (email, username) => {
           </div>
           <div class="content">
             <p>Hi <strong>${username}</strong>,</p>
-            <p>Thank you for joining <strong>Crypto Suite</strong>! We're excited to have you on board.</p>
-            <p>You can now start exploring various cryptographic algorithms and techniques:</p>
+            <p>Thank you for joining <strong>Crypto Suite</strong>!</p>
+            <p>You can now start exploring cryptographic algorithms:</p>
             <ul>
-              <li>Classical Ciphers (Caesar, Vigenère, Playfair, etc.)</li>
+              <li>Classical Ciphers (Caesar, Vigenère, Playfair)</li>
               <li>Modern Encryption Algorithms</li>
               <li>Interactive Learning Tools</li>
-              <li>Progress Tracking & Analytics</li>
+              <li>Progress Tracking</li>
             </ul>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${process.env.CLIENT_URL}/dashboard" class="button">Go to Dashboard</a>
@@ -290,8 +275,7 @@ const sendWelcomeEmail = async (email, username) => {
             <p>Happy learning!<br><strong>Crypto Suite Team</strong></p>
           </div>
           <div class="footer">
-            <p><strong>Crypto Suite</strong></p>
-            <p>© ${new Date().getFullYear()} All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} Crypto Suite. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -301,11 +285,10 @@ const sendWelcomeEmail = async (email, username) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Welcome email sent via SendGrid to:', email);
+    console.log('✅ Welcome email sent to:', email);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('❌ Welcome email failed:', error);
-    // Don't throw - welcome email failure shouldn't block registration
   }
 };
 

@@ -16,7 +16,6 @@ const register = async (req, res) => {
   try {
     const { username, email, password, full_name } = req.body;
 
-    // Check if user already exists
     const [existingUsers] = await pool.query(
       'SELECT id FROM users WHERE email = ? OR username = ?',
       [email, username]
@@ -26,22 +25,18 @@ const register = async (req, res) => {
       return sendError(res, 400, 'Username atau email sudah terdaftar');
     }
 
-    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Insert new user
     const [result] = await pool.query(
       'INSERT INTO users (username, email, password, full_name) VALUES (?, ?, ?, ?)',
       [username, email, hashedPassword, full_name || username]
     );
 
-    // Initialize user statistics
     await pool.query(
       'INSERT INTO user_statistics (user_id) VALUES (?)',
       [result.insertId]
     );
 
-    // Get created user
     const [users] = await pool.query(
       'SELECT id, username, email, full_name, avatar_url, bio, created_at FROM users WHERE id = ?',
       [result.insertId]
@@ -49,12 +44,10 @@ const register = async (req, res) => {
 
     const user = users[0];
 
-    // Send welcome email (async, don't wait)
     sendWelcomeEmail(email, username).catch(err => 
       console.error('Welcome email failed:', err)
     );
 
-    // Send token response
     sendTokenResponse(user, 201, res);
   } catch (error) {
     console.error('Register error:', error);
@@ -71,12 +64,10 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if email and password provided
     if (!email || !password) {
       return sendError(res, 400, 'Email dan password harus diisi');
     }
 
-    // Get user from database
     const [users] = await pool.query(
       'SELECT * FROM users WHERE email = ?',
       [email]
@@ -88,25 +79,21 @@ const login = async (req, res) => {
 
     const user = users[0];
 
-    // Check if user is active
     if (!user.is_active) {
       return sendError(res, 401, 'Akun tidak aktif');
     }
 
-    // Verify password
     const isPasswordValid = await verifyPassword(password, user.password);
 
     if (!isPasswordValid) {
       return sendError(res, 401, 'Email atau password salah');
     }
 
-    // Update last login
     await pool.query(
       'UPDATE users SET last_login = NOW() WHERE id = ?',
       [user.id]
     );
 
-    // Send token response
     sendTokenResponse(user, 200, res);
   } catch (error) {
     console.error('Login error:', error);
@@ -161,7 +148,6 @@ const updateProfile = async (req, res) => {
     const { full_name, bio, avatar_url } = req.body;
     const userId = req.user.id;
 
-    // Build update query dynamically
     const updates = [];
     const values = [];
 
@@ -189,7 +175,6 @@ const updateProfile = async (req, res) => {
       values
     );
 
-    // Get updated user
     const [users] = await pool.query(
       'SELECT id, username, email, full_name, avatar_url, bio, created_at FROM users WHERE id = ?',
       [userId]
@@ -212,7 +197,6 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
-    // Get user with password
     const [users] = await pool.query(
       'SELECT password FROM users WHERE id = ?',
       [userId]
@@ -222,17 +206,14 @@ const changePassword = async (req, res) => {
       return sendError(res, 404, 'User tidak ditemukan');
     }
 
-    // Verify current password
     const isPasswordValid = await verifyPassword(currentPassword, users[0].password);
 
     if (!isPasswordValid) {
       return sendError(res, 401, 'Password saat ini salah');
     }
 
-    // Hash new password
     const hashedPassword = await hashPassword(newPassword);
 
-    // Update password
     await pool.query(
       'UPDATE users SET password = ? WHERE id = ?',
       [hashedPassword, userId]
@@ -249,18 +230,19 @@ const changePassword = async (req, res) => {
  * @desc    Forgot password - Request password reset
  * @route   POST /api/auth/forgot-password
  * @access  Public
+ * 
+ * ✅ DEVELOPMENT MODE: Print link ke console jika email gagal
  */
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check if user exists
     const [users] = await pool.query(
       'SELECT id, username, email FROM users WHERE email = ?',
       [email]
     );
 
-    // Security: Always return success (prevent email enumeration attacks)
+    // Security: Always return success
     if (users.length === 0) {
       return res.json({
         success: true,
@@ -270,17 +252,15 @@ const forgotPassword = async (req, res) => {
 
     const user = users[0];
 
-    // Generate reset token (32 random bytes)
+    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     
-    // Hash token before storing (security best practice)
     const hashedToken = crypto
       .createHash('sha256')
       .update(resetToken)
       .digest('hex');
 
-    // Set expiration (1 hour from now)
-    const expiresAt = new Date(Date.now() + 3600000);
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour
 
     // Store in database
     await pool.query(
@@ -293,26 +273,37 @@ const forgotPassword = async (req, res) => {
       [user.id, hashedToken, expiresAt]
     );
 
-    // Send password reset email
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+
+    // ✅ TRY to send email, but ALWAYS show link in console
     try {
       await sendPasswordResetEmail(email, resetToken);
-      console.log('✅ Password reset email sent to:', email);
+      console.log('✅ Password reset email sent successfully');
     } catch (emailError) {
-      console.error('❌ Failed to send email:', emailError);
-      // Fallback: Log reset link to console for development
-      const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-      console.log('='.repeat(60));
-      console.log('🔑 PASSWORD RESET LINK (Email failed, use this):');
-      console.log('='.repeat(60));
-      console.log(`User: ${user.username} (${email})`);
-      console.log(`Reset Link: ${clientUrl}/reset-password?token=${resetToken}`);
-      console.log(`Expires: ${expiresAt.toLocaleString()}`);
-      console.log('='.repeat(60));
+      console.log('⚠️  Email failed, but continuing with console link...');
     }
+
+    // ✅ ALWAYS log reset link (development safety)
+    console.log('\n' + '='.repeat(70));
+    console.log('🔑 PASSWORD RESET REQUEST');
+    console.log('='.repeat(70));
+    console.log(`📧 Email:        ${email}`);
+    console.log(`👤 Username:     ${user.username}`);
+    console.log(`🔗 Reset Link:   ${resetUrl}`);
+    console.log(`⏰ Expires:      ${expiresAt.toLocaleString()}`);
+    console.log('='.repeat(70));
+    console.log('Copy the link above and paste it in your browser');
+    console.log('='.repeat(70) + '\n');
 
     res.json({
       success: true,
-      message: 'If that email exists, a reset link has been sent'
+      message: 'If that email exists, a reset link has been sent. Check server console for the link.',
+      // ✅ DEVELOPMENT ONLY: Include link in response
+      ...(process.env.NODE_ENV === 'development' && {
+        dev_reset_url: resetUrl,
+        dev_note: 'This field only appears in development mode'
+      })
     });
 
   } catch (error) {
@@ -333,46 +324,124 @@ const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    // Hash the token from URL to compare with database
+    // ✅ ENHANCED LOGGING
+    console.log('\n' + '='.repeat(70));
+    console.log('🔑 PASSWORD RESET ATTEMPT');
+    console.log('='.repeat(70));
+    console.log('📥 Received token:', token ? `${token.substring(0, 20)}...` : 'MISSING');
+    console.log('📥 Token length:', token ? token.length : 0);
+    console.log('📥 Password provided:', newPassword ? 'YES' : 'NO');
+
+    if (!token || !newPassword) {
+      console.log('❌ Missing required fields');
+      console.log('='.repeat(70) + '\n');
+      return res.status(400).json({
+        success: false,
+        message: 'Token and new password are required'
+      });
+    }
+
+    // Validate password
+    if (newPassword.length < 8) {
+      console.log('❌ Password too short');
+      console.log('='.repeat(70) + '\n');
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    // Hash the token from URL to match database
     const hashedToken = crypto
       .createHash('sha256')
       .update(token)
       .digest('hex');
 
+    console.log('🔐 Hashed token:', hashedToken.substring(0, 20) + '...');
+    console.log('🔍 Searching database...');
+
+    // First, check if ANY reset tokens exist
+    const [allTokens] = await pool.query(
+      'SELECT user_id, token, expires_at FROM password_resets'
+    );
+    console.log(`📊 Total tokens in database: ${allTokens.length}`);
+
+    if (allTokens.length > 0) {
+      console.log('📋 Database tokens:');
+      allTokens.forEach((t, idx) => {
+        console.log(`   ${idx + 1}. User ${t.user_id}: ${t.token.substring(0, 20)}... (expires: ${t.expires_at})`);
+        console.log(`      Match: ${t.token === hashedToken ? '✅ YES' : '❌ NO'}`);
+        console.log(`      Expired: ${new Date(t.expires_at) < new Date() ? '⚠️  YES' : '✅ NO'}`);
+      });
+    }
+
     // Find valid reset token (not expired)
     const [resets] = await pool.query(
-      `SELECT pr.user_id, pr.expires_at, u.email, u.username
+      `SELECT pr.user_id, pr.token, pr.expires_at, pr.created_at, u.email, u.username
        FROM password_resets pr
        JOIN users u ON pr.user_id = u.id
-       WHERE pr.token = ? AND pr.expires_at > NOW()`,
+       WHERE pr.token = ?`,
       [hashedToken]
     );
 
+    console.log(`🔍 Matching tokens found: ${resets.length}`);
+
     if (resets.length === 0) {
+      console.log('❌ Token not found in database');
+      console.log('💡 Possible reasons:');
+      console.log('   1. Token was already used and deleted');
+      console.log('   2. Token is incorrect (copy-paste error)');
+      console.log('   3. Database was cleared');
+      console.log('='.repeat(70) + '\n');
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired reset token'
+        message: 'Invalid reset token. Please request a new password reset link.'
       });
     }
 
     const reset = resets[0];
+    const now = new Date();
+    const expiresAt = new Date(reset.expires_at);
+    const isExpired = expiresAt < now;
+
+    console.log('✅ Token found in database');
+    console.log(`   User: ${reset.email} (${reset.username})`);
+    console.log(`   Created: ${reset.created_at}`);
+    console.log(`   Expires: ${reset.expires_at}`);
+    console.log(`   Now: ${now.toISOString()}`);
+    console.log(`   Status: ${isExpired ? '⚠️  EXPIRED' : '✅ VALID'}`);
+
+    if (isExpired) {
+      console.log('❌ Token has expired');
+      console.log('='.repeat(70) + '\n');
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token has expired. Please request a new password reset link.'
+      });
+    }
+
+    console.log('🔄 Updating password...');
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
 
-    // Update user password
+    // Update password
     await pool.query(
       'UPDATE users SET password = ? WHERE id = ?',
       [hashedPassword, reset.user_id]
     );
 
-    // Delete used reset token
+    console.log('✅ Password updated in database');
+
+    // Delete used token
     await pool.query(
       'DELETE FROM password_resets WHERE user_id = ?',
       [reset.user_id]
     );
 
+    console.log('🗑️  Used token deleted');
     console.log(`✅ Password reset successful for: ${reset.email} (${reset.username})`);
+    console.log('='.repeat(70) + '\n');
 
     res.json({
       success: true,
@@ -380,7 +449,8 @@ const resetPassword = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error('❌ Reset password error:', error);
+    console.log('='.repeat(70) + '\n');
     res.status(500).json({
       success: false,
       message: 'An error occurred while resetting your password'
