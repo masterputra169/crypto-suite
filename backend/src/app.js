@@ -23,12 +23,14 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://cryptosuite.online',
+  origin: process.env.CORS_ORIGIN || process.env.CLIENT_URL || 'https://cryptosuite.online',
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
+
 app.use(cors(corsOptions));
 
 // Body parser middleware
@@ -73,9 +75,9 @@ app.get('/health', (req, res) => {
 });
 
 // ✅ API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/cipher', cipherRoutes);
+app.use('/api/cipher', require('./routes/cipher.routes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
 
 // ✅ Log all registered routes (only in development)
 if (process.env.NODE_ENV === 'development') {
