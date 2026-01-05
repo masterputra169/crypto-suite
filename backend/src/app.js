@@ -24,7 +24,12 @@ const app = express();
 app.use(helmet());
 
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || process.env.CLIENT_URL || 'https://cryptosuite.online',
+  origin: [
+    'https://cryptosuite.online',
+    'https://www.cryptosuite.online',
+    'http://localhost:5173',  // untuk development
+    'http://localhost:3000'
+  ],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
